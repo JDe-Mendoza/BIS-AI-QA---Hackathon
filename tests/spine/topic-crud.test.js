@@ -1,19 +1,18 @@
 // Suite B - Topic CRUD & Dashboard (T0). The first step of the demo spine:
 // an admin BUILDS a topic (before a learner can open it and tick it complete).
-// Scope: Support MDs "TDD - Test Cases (Full Scope).md" Suite B + "TDD - Spine Test
-// Cases.md" Suite A + frozen plans/8716 CONTRACTS.md (saveTopic/getTopics)
-// + HAC-382 [decision][admin] "Validate Title only; Description optional".
+// VERIFIED 2026-07-14 against the merged team2-hackathon code (HAC-343 / PR 11844):
+// v1/model/services/ht2microlearning.cfc, BuildYourOwnForm.js, AddTopic.test.js,
+// 8716_MicrolearningSchema.sql. Scope: Support MDs Suite B + "TDD - Spine Test Cases"
+// Suite A + CONTRACTS.md + HAC-382 [decision][admin] "Validate Title only; Description optional".
 //
-// These run against the CONTRACT ORACLE today. Repoint the import at the real
-// team2-hackathon admin module (ajaxht2microlearning.saveTopic/getTopics) once the
-// code is wired (see tests/README.md); the assertions do not change - that is the
-// definition-of-done gate.
+// Runs against the CONTRACT ORACLE (the CF backend cannot be imported into Vitest);
+// real backend behaviour is exercised in the Playwright-on-staging lane (tests/README.md).
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createTopicStore,
   validateTopic,
-  withinLimits,
+  capField,
   displayImageUrl,
   TITLE_MAX,
   DESCRIPTION_MAX,
@@ -40,7 +39,7 @@ describe('Suite B - Topic CRUD & Dashboard (T0)', () => {
     expect(topics[0]).toMatchObject({
       topicId: res.topicId,
       title: 'Defensive Driving',
-      status: 'active', // defaults to Active on create
+      status: 'active', // schema fldStatus DEFAULT 'active'
     });
   });
 
@@ -48,40 +47,47 @@ describe('Suite B - Topic CRUD & Dashboard (T0)', () => {
     const res = store.saveTopic({ title: 'Ladder Safety' }); // no description supplied
     expect(res.error).toBe(false);
 
-    const { topics } = store.getTopics({ status: 'active' });
-    expect(topics).toHaveLength(1);
-    expect(topics[0].title).toBe('Ladder Safety');
+    const { topic } = store.getTopicDetails(res.topicId);
+    expect(topic.title).toBe('Ladder Safety');
+    expect(topic.description).toBe(''); // schema fldDescription DEFAULT ''
   });
 
-  it('B2 - empty title is blocked with "Please enter a title." and no topic is created', () => {
+  it('B2 - empty title: backend returns a bare {error:true}; the FE layer owns the message', () => {
+    // Backend envelope (svc.cfc L59-61): bare error, NO message string, nothing persisted.
     const res = store.saveTopic({ title: '   ', description: 'has a body but no title' });
-    expect(res).toMatchObject({ error: true, message: TITLE_REQUIRED_MESSAGE });
+    expect(res).toEqual({ error: true });
     expect(store.getTopics({ status: 'active' }).topics).toHaveLength(0);
 
-    // Title is the single validated field; the message copy is fixed (HAC-382).
+    // FE layer (AddTopicModal / validateTopic) is where "Please enter a title." lives.
     expect(validateTopic({ title: '' })).toEqual({ valid: false, message: TITLE_REQUIRED_MESSAGE });
+    expect(validateTopic({ title: '   ' }).valid).toBe(false); // whitespace treated as empty
     expect(TITLE_REQUIRED_MESSAGE).toBe('Please enter a title.');
   });
 
-  it('B3 - title limit is 150: exactly 150 is allowed, 151 exceeds the counter limit', () => {
+  it('B3 - title is CAPPED at 150 (trimmed + truncated), not rejected', () => {
     expect(TITLE_MAX).toBe(150);
-    expect(withinLimits({ title: 'x'.repeat(150) })).toBe(true);
-    expect(withinLimits({ title: 'x'.repeat(151) })).toBe(false);
+    expect(capField('x'.repeat(200), TITLE_MAX)).toHaveLength(150);
+    expect(capField('  spaced  ', TITLE_MAX)).toBe('spaced'); // trims like left(trim())
+    // a 200-char title persists truncated to 150 (matches dev AddTopic.test.js "capped at 150")
+    const { topicId } = store.saveTopic({ title: 'y'.repeat(200) });
+    expect(store.getTopicDetails(topicId).topic.title).toHaveLength(150);
   });
 
-  it('B4 - description limit is 500: exactly 500 allowed, 501 exceeds; empty is allowed (optional)', () => {
+  it('B4 - description is CAPPED at 500 and is optional (empty allowed)', () => {
     expect(DESCRIPTION_MAX).toBe(500);
-    expect(withinLimits({ title: 'ok', description: 'x'.repeat(500) })).toBe(true);
-    expect(withinLimits({ title: 'ok', description: 'x'.repeat(501) })).toBe(false);
-    expect(withinLimits({ title: 'ok', description: '' })).toBe(true); // optional
+    expect(capField('z'.repeat(600), DESCRIPTION_MAX)).toHaveLength(500);
+    const { topicId } = store.saveTopic({ title: 'ok', description: 'z'.repeat(600) });
+    expect(store.getTopicDetails(topicId).topic.description).toHaveLength(500);
+    expect(store.saveTopic({ title: 'no desc' }).error).toBe(false); // optional
   });
 
-  it('B5 - no image uploaded resolves to the default topic image (null imageUrl, never broken)', () => {
+  it('B5 - no image => API imageUrl "" resolves to the default (never broken)', () => {
     const { topicId } = store.saveTopic({ title: 'Fire Extinguisher Basics' });
     const { topic } = store.getTopicDetails(topicId);
-    expect(topic.imageUrl).toBeNull();
+    // Real API returns "" for no image (CONTRACTS.md says null - discrepancy raised to Rejith).
+    expect(topic.imageUrl).toBe('');
     expect(displayImageUrl(topic)).toBe(DEFAULT_TOPIC_IMAGE);
-    expect(displayImageUrl(topic)).toBeTruthy(); // not broken/empty
+    expect(displayImageUrl({ imageUrl: null })).toBe(DEFAULT_TOPIC_IMAGE); // robust either way
   });
 
   it('B8 - edit title/description persists and does not create a second topic', () => {
@@ -94,15 +100,15 @@ describe('Suite B - Topic CRUD & Dashboard (T0)', () => {
     expect(store.getTopics({ status: 'active' }).topics).toHaveLength(1);
   });
 
-  // T1 - UI/DOM behaviours that need the real admin FE (counter turns red, crop modal,
-  // grid/list toggle, pillbox filter, search + empty states, card hover/clickability).
-  // These belong to the Playwright/manual lane per tests/README.md "Layer boundary";
-  // stubbed here for traceability. Flesh out once the admin module is readable.
+  // T1 - UI/DOM behaviours that need the real admin FE (counter, crop modal, grid/list,
+  // pillbox, search + empty states, card hover/clickability). Playwright/manual lane per
+  // tests/README.md "Layer boundary". NB B11 search: the merged getTopics is title-ONLY,
+  // so the spec's name/activity/description search is not yet implemented.
   it.todo('B6 [T1] image upload + crop modal -> cropped image saved and shown on card');
   it.todo('B7 [T1] image >4MB or non-JPG/PNG -> rejected with the format/size helper');
   it.todo('B9 [T1] dashboard grid <-> list toggle renders the same topics in both layouts');
   it.todo('B10 [T1] status pillbox (Active/Draft/Deactivated) filters cards to that status');
-  it.todo('B11 [T1] search matches name/activity/description scoped to the active pill; (x) clears');
+  it.todo('B11 [T1] search matches name/activity/description (merged code is title-only - gap)');
   it.todo('B12 [T1] search no match -> "No topics found."');
   it.todo('B13 [T1] no topics at all -> Welcome empty state');
   it.todo('B14 [T1] Active card is clickable (hover); Deactivated card is not clickable');

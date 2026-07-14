@@ -1,34 +1,36 @@
-// Executable spec of the FROZEN topic-CRUD contract (admin lane).
-// Source of truth: plans/8716 CONTRACTS.md (ajaxht2microlearning.saveTopic /
-// getTopics / getTopicDetails) + HAC-382 [decision][admin] "Validate Title only;
-// Description optional" + Admin/02 - Dashboard.md (02.e Add Topic) + Admin/04 - Topic Settings.md.
+// Executable spec of the FROZEN topic-CRUD contract (admin lane), VERIFIED against
+// the merged implementation on team2-hackathon (HAC-343 / PR 11844), read 2026-07-14:
+//   v1/model/services/ht2microlearning.cfc   saveTopic/getTopics/getTopicDetails
+//   v1/views/ht2microlearning/src/components/addTopic/BuildYourOwnForm.js  (limits)
+//   v1/views/.../addTopic/__tests__/AddTopic.test.js   (FE validation copy)
+//   db_scripts/8716_MicrolearningSchema.sql   (column types + defaults)
+// plus plans/8716 CONTRACTS.md and HAC-382 [decision][admin] "Validate Title only;
+// Description optional".
 //
-// This is the CONTRACT ORACLE, not production code. Its job is to make the topic
-// rules executable so Suite B (T0) runs GREEN today, before the real admin module
-// is readable. When the team2-hackathon code is wired in, the specs get repointed
-// at the real saveTopic/getTopics/getTopicDetails and MUST still pass - that
-// repoint is the definition-of-done gate (see tests/README.md).
+// CONTRACT ORACLE, not production code. It makes the topic rules executable so Suite B
+// (T0) runs GREEN and now matches the merged code. The ColdFusion backend cannot be
+// imported into Vitest; real backend behaviour is exercised in the Playwright-on-staging
+// lane (see tests/README.md).
 //
-// Frozen rules encoded here:
-//   - saveTopic({topicId:0,...}) creates; topicId>0 edits the same row.
-//     Returns the bisapi envelope { error:false, topicId }. (B1/B8)
-//   - Validation is TITLE-ONLY (HAC-382): empty/whitespace title => error with the
-//     single message "Please enter a title." and NO topic persisted. Description is
-//     OPTIONAL - a valid title with no description still saves. (B2)
-//   - New topic defaults to status "active" (draft/deactivated are stretch). (B1)
-//   - No image => imageUrl null; the FE renders the default image for null. (B5)
-//   - Field limits (counter/maxlength in the FE): title <= 150, description <= 500.
-//     These are the counter thresholds, not extra error copy. (B3/B4)
-//   - status/progress strings are lowercase per the bisapi envelope convention.
+// Verified rules (svc.cfc line refs):
+//   - saveTopic: empty/whitespace title => BARE { error:true } (L59-61). The
+//     "Please enter a title." copy is the FE layer only (validateTopic), rendered by
+//     AddTopicModal, which also blocks the call client-side. Description is OPTIONAL.
+//   - title/description are CAPPED, not rejected: FE maxLength + backend
+//     left(trim(x),150|500) (L57-58) trim then truncate silently. (B3/B4)
+//   - create defaults status "active" (L79; schema fldStatus DEFAULT 'active'). (B1)
+//   - getTopics filters by status, searches fldTitle ONLY (L35), orders recency DESC (L38).
+//   - no image => the API returns imageUrl "" (topicRowToStruct: fldImagePath ?: "").
+//     NB CONTRACTS.md freezes this as null - discrepancy raised to @rejith.krishnan;
+//     displayImageUrl treats both "" and null as no-image so B5 is robust either way.
 
 export const TITLE_MAX = 150;
 export const DESCRIPTION_MAX = 500;
 export const TITLE_REQUIRED_MESSAGE = 'Please enter a title.';
 export const DEFAULT_TOPIC_IMAGE = '/microlearning/assets/topic-default.png';
 
-// Mirrors the Add-Topic form validation (HAC-336 addTopic/BuildYourOwnForm.js):
-// title is the ONLY required/validated field; empty or whitespace-only is rejected
-// with the one canonical message. Description is intentionally not validated (HAC-382).
+// FE-layer validation (AddTopicModal / BuildYourOwnForm): title-only. This is where the
+// single message lives - the backend does NOT echo it. (HAC-382; dev AddTopic.test.js A2)
 export function validateTopic({ title } = {}) {
   if (title == null || String(title).trim() === '') {
     return { valid: false, message: TITLE_REQUIRED_MESSAGE };
@@ -36,35 +38,36 @@ export function validateTopic({ title } = {}) {
   return { valid: true, message: null };
 }
 
-// The FE counter/maxlength limits (title 150, description 500). Description is
-// optional, so an empty description is within limits. This is the length rule the
-// counter enforces - the DOM "counter turns red / cannot type past" behaviour is
-// verified in the Playwright/manual lane (see tests/README.md "Layer boundary").
-export function withinLimits({ title = '', description = '' } = {}) {
-  return String(title).length <= TITLE_MAX && String(description).length <= DESCRIPTION_MAX;
+// Field cap: FE maxLength + backend left(trim(x), max) => trimmed then truncated, never
+// rejected. Mirrors svc.cfc L57-58 and the dev "title capped at 150" test. (B3/B4)
+export function capField(value, max) {
+  return String(value ?? '').trim().slice(0, max);
 }
 
-// FE image resolution: a null imageUrl falls back to the default topic image, so a
-// topic created without an upload never renders a broken/empty image. (B5)
+// FE image resolution: a missing image (imageUrl "" OR null) falls back to the default,
+// so a topic created without an upload never renders broken/empty. (B5)
 export function displayImageUrl(topic) {
-  return topic && topic.imageUrl != null ? topic.imageUrl : DEFAULT_TOPIC_IMAGE;
+  return topic && topic.imageUrl ? topic.imageUrl : DEFAULT_TOPIC_IMAGE;
 }
 
 // A persistent topic store (think: tblht2MicrolearningTopic behind saveTopic/getTopics).
-// Not reset between calls - reusing one instance models the DB across requests.
 export function createTopicStore(now = () => new Date().toISOString()) {
   const byId = new Map();
   let nextId = 12; // matches the CONTRACTS.md example topicId
 
-  // Mirrors ajaxht2microlearning.saveTopic - returns the bisapi envelope.
+  // Mirrors ajaxht2microlearning.saveTopic -> the bisapi envelope.
   function saveTopic({ topicId = 0, title, description = '', languages = [] } = {}) {
-    const check = validateTopic({ title }); // title-only validation (HAC-382)
-    if (!check.valid) return { error: true, message: check.message };
+    // Backend guard: empty/whitespace title => bare { error:true } (no message; that is
+    // the FE's job). Verified: svc.cfc L59-61.
+    if (!validateTopic({ title }).valid) return { error: true };
+
+    const cleanTitle = capField(title, TITLE_MAX); // left(trim(title),150)
+    const cleanDescription = capField(description, DESCRIPTION_MAX); // left(trim(description),500)
 
     if (topicId && byId.has(topicId)) {
       const existing = byId.get(topicId);
-      existing.title = title;
-      existing.description = description;
+      existing.title = cleanTitle;
+      existing.description = cleanDescription;
       existing.languages = languages;
       existing.lastUpdated = now();
       return { error: false, topicId };
@@ -73,36 +76,37 @@ export function createTopicStore(now = () => new Date().toISOString()) {
     const id = topicId && topicId > 0 ? topicId : nextId++;
     byId.set(id, {
       topicId: id,
-      title,
-      description,
-      imageUrl: null, // no image on create => FE shows the default (B5)
-      status: 'active', // default on create; draft/deactivated are stretch (B1)
+      title: cleanTitle,
+      description: cleanDescription,
+      imageUrl: '', // no image => API returns "" (see header note / Rejith discrepancy)
+      status: 'active', // create default; schema fldStatus DEFAULT 'active'
       activityCount: 0,
+      providerName: '', // derived from the company in real code
       languages,
       lastUpdated: now(),
     });
     return { error: false, topicId: id };
   }
 
-  // Mirrors ajaxht2microlearning.getTopics - status/search filtered (search scoped
-  // to title + description here; activity-name search is a T1 UI concern).
+  // Mirrors getTopics - status filter + fldTitle-ONLY search, newest first.
+  // NB the spec's broader search (name/activity/description, B11) is NOT in the merged
+  // code yet - the query is title-only (svc.cfc L35).
   function getTopics({ status = 'active', search = '' } = {}) {
     const term = String(search).trim().toLowerCase();
-    const topics = [...byId.values()]
-      .filter((t) => t.status === status)
-      .filter(
-        (t) =>
-          term === '' ||
-          t.title.toLowerCase().includes(term) ||
-          String(t.description || '').toLowerCase().includes(term),
-      );
-    return { error: false, topics };
+    return {
+      error: false,
+      topics: [...byId.values()]
+        .filter((t) => t.status === status)
+        .filter((t) => term === '' || t.title.toLowerCase().includes(term))
+        .sort((a, b) => b.topicId - a.topicId), // recency proxy (svc orders lastUpdated DESC, id DESC)
+    };
   }
 
-  // Mirrors ajaxht2microlearning.getTopicDetails - the topic plus its activities.
+  // Mirrors getTopicDetails - bare { error:true } when not found (svc.cfc L114-116).
   function getTopicDetails(topicId) {
-    const topic = byId.get(topicId) ?? null;
-    return { error: topic == null, topic, activities: [] };
+    const topic = byId.get(topicId);
+    if (!topic) return { error: true };
+    return { error: false, topic, activities: [] };
   }
 
   return { saveTopic, getTopics, getTopicDetails };
