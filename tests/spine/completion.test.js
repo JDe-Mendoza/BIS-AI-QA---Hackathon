@@ -2,9 +2,11 @@
 // Scope: 1st - Microlearning/Support MDs "TDD - Test Cases (Full Scope).md" Suite I
 //        + frozen plans/8716 CONTRACTS.md (recordCompletion / progress rollup).
 //
-// These run against the CONTRACT ORACLE today. Repoint the import at the real
-// team2-hackathon learner module once the code is wired (see tests/README.md);
-// the assertions do not change - that is the definition-of-done gate.
+// These run against the CONTRACT ORACLE. VERIFIED 2026-07-14 against the merged
+// recordCompletion (team2-hackathon f50951f, HAC-355): INSERT ... ON DUPLICATE KEY UPDATE
+// fldLastCompleted on uk_activity_user keeps fldFirstCompleted and prevents a second row -
+// so I7 (no double-count), I8 (per-learner), I9 (persist) all hold in the real code. Repoint
+// the import at the learner module when convenient; the assertions do not change - the gate.
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createCompletionStore, deriveProgress } from '../support/completion-contract.js';

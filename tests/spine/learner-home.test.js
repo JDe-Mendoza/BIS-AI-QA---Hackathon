@@ -48,13 +48,15 @@ describe('Suite H - Learner homepage (T0)', () => {
     expect(store.getMyTopics(OTHER).topics[0].progress).toBe('new'); // OTHER unaffected
   });
 
-  // T1 - filters/order/empty-states. Two VERIFIED code-vs-spec drifts to raise when W3 opens:
-  //   - real getMyTopics filter "inprogress" matches progress exactly, EXCLUDING New, but
-  //     H3/the resolved decision says In Progress should include New.
-  //   - real getMyTopics orders recency DESC (lastUpdated, topicId), but H6 says alphabetical.
-  it.todo('H3 [T1] filter In Progress shows New AND In Progress (merged code excludes New - drift)');
+  // T1 - filters/order/empty-states. My two H-drift flags were CONFIRMED (Mika, 2026-07-14,
+  // after a reversal): SPEC wins on both, the merged code is the bug, fix tracked in HAC-393 -
+  //   - H3: the "In Progress" filter MUST include New (Figma 58-1851); the merged code that
+  //     excludes New is the bug. Expected: In Progress shows New + In Progress together.
+  //   - H6: the learner homepage sorts ALPHABETICALLY; the merged code's recency order is the bug.
+  //   Treat include-New + alphabetical as the expected behaviour once HAC-393 lands.
+  it.todo('H3 [T1] filter In Progress includes New (HAC-393 fix; merged code drops New = bug)');
   it.todo('H4 [T1] filter Complete shows Completed only; All shows everything');
-  it.todo('H6 [T1] topics ordered alphabetically + Load More (merged code orders recency - drift)');
+  it.todo('H6 [T1] topics ordered ALPHABETICALLY + Load More (HAC-393 fix; merged recency = bug)');
   it.todo('H7 [T1] no granted topics -> Welcome empty state');
   it.todo('H8 [T1] search no results -> "No topics found."');
 });

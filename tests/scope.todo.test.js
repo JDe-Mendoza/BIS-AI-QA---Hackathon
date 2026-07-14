@@ -33,11 +33,9 @@ describe('Suite E - Edit extras: drag-reorder & Complete Again [T1/T2]', () => {
   it.todo('E1-E3 [T2] drag reorder persists; Complete Again unchecked/checked semantics');
 });
 
-describe('Suite F - Permissions [T1]', () => {
-  it.todo('F1 add By User -> that user sees the topic; non-granted does not');
-  it.todo('F3 remove permission -> access lost (drops off homepage)');
-  it.todo('F2 By Company Role (final types: By User + By Company Role per HAC-387; By Location dropped)');
-});
+// Suite F - Permissions: worked in tests/spine/permissions.test.js
+// (F0/F1/F2/F3/F3b/F4/F5 green against the permission-contract oracle - By User + By Company
+//  Role per HAC-386 pivot, zero-perms-open per HAC-390; F4 asserts By-Location is rejected).
 
 describe('Suite G - Multi-language & auto-translate [T2]', () => {
   it.todo('G1-G5 default language chip, add/delete language, per-language fields, auto-translate');

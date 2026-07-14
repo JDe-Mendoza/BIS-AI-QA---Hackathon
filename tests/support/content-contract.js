@@ -1,19 +1,26 @@
-// Executable spec of the content (Activity) CRUD contract (Suite C).
-// Source: plans/8716 CONTRACTS.md (Activity shape + saveActivity) + Support MDs Suite C.
+// Executable spec of the content (Activity) CRUD contract (Suite C), VERIFIED 2026-07-14
+// against the merged code (team2-hackathon f50951f, HAC-348 backend / HAC-349 form):
+//   v1/model/services/ht2microlearning.cfc  saveActivity + uploadActivityFile
+//   v1/views/ht2microlearning/src/components/addActivity/ActivityForm.js  (TITLE_MAX)
+// plus CONTRACTS.md (Activity shape) + Support MDs Suite C.
 //
-// NB the real ajaxht2microlearning.saveActivity is still a STUB in the merged code
-// (v1/model/services/ht2microlearning.cfc L142-155, owned by W2-1/HAC-348), and the Add/Edit
-// Activity form is HAC-349. So Suite C runs against THIS oracle and gets repointed once the
-// content backend lands. Verified shape bits (from CONTRACTS.md + schema): type enum
-// link|pdf|video(|mp4|scorm), completionMode open|watch|score, status active|deactivated.
-//
-// CONTENT_TITLE_MAX: Support MDs / C6 say 50 (counter "0/50"). NB the schema column is
-// VARCHAR(150) (provisioned wide) - the 50 cap is the FE constraint per spec and is UNVERIFIED
-// until the Add-Content form (HAC-349) exists; confirm the real maxLength then.
+// CONTRACT ORACLE (the CF backend can't be imported into Vitest; real behaviour is exercised
+// in Playwright-on-staging). Verified rules:
+//   - saveActivity: empty title OR invalid type OR foreign topic => bare { error:true }; the
+//     title is capped left(trim(title),150). (C6)
+//   - CONTENT_TITLE_MAX = 150 (HAC-377: fldTitle VARCHAR(150), SAME AS TOPICS - the spec/mockup
+//     "50 / counter 0/50" is superseded).
+//   - one `url` field carries both: link|video -> browse URL in fldUrl (https:// prefixed when
+//     the scheme is missing); pdf|mp4|scorm -> the uploadActivityFile path in fldFilePath.
+//   - new content is APPENDED (fldSortOrder = MAX+1) and listed by fldSortOrder = creation
+//     order, reorderable via drag (E1). NB the spec's "sorted alphabetically" is superseded by
+//     sortOrder + drag-reorder. (C7)
+//   - completionMode by type: open (link/pdf/video) | watch (mp4) | score (scorm).
 
-export const CONTENT_TITLE_MAX = 50;
+export const CONTENT_TITLE_MAX = 150; // HAC-377: same as topics; supersedes the mockup's 50
 export const TITLE_REQUIRED_MESSAGE = 'Please enter a title.';
-export const CONTENT_TYPES = ['link', 'pdf', 'video']; // T0; mp4/scorm are later tiers
+export const CONTENT_TYPES = ['link', 'pdf', 'video', 'mp4', 'scorm'];
+export const URL_TYPES = ['link', 'video']; // carry a browse URL; the rest carry a file path
 
 // Frozen completion mode by type: open (link/pdf/video) | watch (mp4) | score (scorm).
 export function completionMode(type) {
@@ -22,10 +29,13 @@ export function completionMode(type) {
   return 'open';
 }
 
-// Title-only validation, mirroring the topic form (empty/whitespace blocked).
-export function validateActivity({ title } = {}) {
+// saveActivity validation: title required AND type must be a known content type.
+export function validateActivity({ title, type = 'link' } = {}) {
   if (title == null || String(title).trim() === '') {
     return { valid: false, message: TITLE_REQUIRED_MESSAGE };
+  }
+  if (!CONTENT_TYPES.includes(String(type).toLowerCase())) {
+    return { valid: false, message: null }; // invalid type => bare error (no copy)
   }
   return { valid: true, message: null };
 }
@@ -34,36 +44,50 @@ export function capField(value, max) {
   return String(value ?? '').trim().slice(0, max);
 }
 
+// link/video URLs get an https:// scheme when none was supplied (mirrors the backend).
+export function normalizeUrl(url) {
+  const u = String(url ?? '').trim();
+  if (u !== '' && !/^https?:\/\//i.test(u)) return 'https://' + u;
+  return u;
+}
+
 export function createContentStore(now = () => new Date().toISOString()) {
   const byId = new Map();
   let nextId = 44; // matches the CONTRACTS.md example activityId
 
-  function saveActivity({ activityId = 0, topicId, title, type = 'link', url = '', fileUrl = '' } = {}) {
-    if (!validateActivity({ title }).valid) return { error: true };
-    const id = activityId && activityId > 0 ? activityId : nextId++;
-    byId.set(id, {
-      activityId: id,
-      topicId,
+  function saveActivity({ activityId = 0, topicId, title, type = 'link', url = '' } = {}) {
+    const t = String(type).toLowerCase();
+    if (!validateActivity({ title, type: t }).valid) return { error: true };
+
+    // one `url` field routes by type: link/video -> browse URL; else -> file path
+    const isUrlType = URL_TYPES.includes(t);
+    const fields = {
       title: capField(title, CONTENT_TITLE_MAX),
-      type,
-      url,
-      fileUrl,
-      completionMode: completionMode(type),
+      type: t,
+      url: isUrlType ? normalizeUrl(url) : '',
+      fileUrl: isUrlType ? '' : String(url ?? '').trim(),
+      completionMode: completionMode(t),
       status: 'active',
-      sortOrder: 0,
-      lastUpdated: now(),
-    });
+    };
+
+    if (activityId && byId.has(activityId)) {
+      Object.assign(byId.get(activityId), fields, { lastUpdated: now() });
+      return { error: false, activityId };
+    }
+    // append: fldSortOrder = COALESCE(MAX(sortOrder in topic),0)+1
+    const sortOrder =
+      [...byId.values()].filter((a) => a.topicId === topicId).reduce((m, a) => Math.max(m, a.sortOrder), 0) + 1;
+    const id = activityId && activityId > 0 ? activityId : nextId++;
+    byId.set(id, { activityId: id, topicId, ...fields, sortOrder, lastUpdated: now() });
     return { error: false, activityId: id };
   }
 
-  // Content is listed ALPHABETICALLY by title (C7 / Support MDs "sorted alphabetically").
-  // NB the merged admin getTopicDetails currently orders by fldSortOrder - reconcile when
-  // the content backend (HAC-348) + drag-reorder (E1) land; spec default is alphabetical.
+  // Listed by fldSortOrder (creation order), active-only unless includeInactive. (C7)
   function getActivities(topicId, { includeInactive = false } = {}) {
     return [...byId.values()]
       .filter((a) => a.topicId === topicId)
       .filter((a) => includeInactive || a.status === 'active')
-      .sort((a, b) => a.title.localeCompare(b.title));
+      .sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
   return { saveActivity, getActivities };
