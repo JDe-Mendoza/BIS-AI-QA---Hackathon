@@ -56,7 +56,7 @@ Content — `title` ≤50 required · `type` Link/PDF/Video(URL+MP4, MP4 <80MB)/
 - **D1 [T1]** Deactivate content (× + confirm) → moves to Deactivated tab; learner loses access.
 - **D2 [T1]** Deactivated card shows **Date Deactivated** + **Deactivated By**.
 - **D3 [T1]** Reactivate (↺ + confirm) → back to Active; learner regains access.
-- **D4 [T1]** Purge (🗑) requires **purge code** → permanent delete; item gone AND all its completion records removed.
+- **D4 [T1]** Purge (🗑) requires **purge code** → permanent delete; item gone AND all its completion records removed. Verify the learner-side effect explicitly, not just that the admin-side content is gone: a learner who had completed the purged item sees their topic progress **revert** (e.g. 2/3 → 1/3) — a soft delete that leaves the completion record counted toward progress must fail this.
 - **D5 [T1]** Bulk-select on **Active** tab → action bar shows "{n} items selected" · Cancel · **Deactivate**.
 - **D6 [T1]** Bulk-select on **Deactivated** tab → Cancel · **Purge** · **Reactivate**.
 - **D7 [T1]** Select-all checkbox (list header) selects every row.
@@ -66,7 +66,7 @@ Content — `title` ≤50 required · `type` Link/PDF/Video(URL+MP4, MP4 <80MB)/
 - **E1 [T2]** Drag 6-dot handle reorders content; new order persists.
 - **E2 [T2]** Edit with **Complete Again UNCHECKED** → content updated, existing completions preserved.
 - **E3 [T2]** Edit with **Complete Again CHECKED** → users who already completed it must complete again; **latest completion record retained**; success modal reflects the checked variant.
-- **E4 [T1] ⭐** **Preview (eye) must NOT record completion** — admin previewing a content item does not mark it complete for that admin.
+- **E4 [T1] ⭐** **Preview (eye) must NOT record completion** — admin previewing a content item does not mark it complete for that admin. Assert no `POST …/complete` call fires on preview open, not just that the admin's own progress bar doesn't increment.
 
 ## Suite F — Permissions [T1]
 
@@ -104,19 +104,19 @@ Content — `title` ≤50 required · `type` Link/PDF/Video(URL+MP4, MP4 <80MB)/
 - **I4 [T0]** Open a **Video** item (URL or MP4, in-portal) → completion recorded **at open** (NOT gated on full-watch).
 - **I5 [T0]** Progress increments correctly: 0/3 → open item → **1/3** → **2/3** → **3/3**.
 - **I6 [T0]** All items complete → topic status flips to **Completed**.
-- **I7 [T0] ⭐** Re-opening an already-completed item does **NOT** double-count (no 4/3, no regression).
+- **I7 [T0] ⭐** Re-opening an already-completed item does **NOT** double-count (no 4/3, no regression). Assert at the API level, not just the UI: call `POST …/complete` twice for the same `(learner, contentId)` and confirm the second response's `completedAt`/`topicProgress` is unchanged from the first — a backend that double-increments while the UI clamps the display must still fail this.
 - **I8 [T0] ⭐** Completion is **per-learner** — learner X's progress never leaks to learner Y.
 - **I9 [T0] ⭐** Completion **survives reload / re-login** (persisted, not session-only).
 - **I10 [T1]** A **Completed** item stays openable for review.
-- **I11 [T2] ⭐ (Updated flag)** Admin adds a new content item to a topic the learner already completed → topic moves **Completed → In Progress**, "● Updated" pill shows.
+- **I11 [T1] ⭐ (Updated flag)** Admin adds a new content item to a topic the learner already completed → topic moves **Completed → In Progress**, "● Updated" pill shows. Retagged from T2 → T1: this is one of the highest-value guard tests below, so it can't sit in the cut-first tier. Full lifecycle, not just the status flip: (1) topic status changes on the learner homepage, (2) the "● Updated" pill is visibly present, (3) the pill clears once the learner opens the new item.
 - **I12 [T2] (Updated flag)** Admin edits a completed item with **Complete Again** → that item returns to Start; topic → In Progress.
-- **I13 [T2]** A plain "Updated" badge (no Complete Again) **clears when opened** and requires **no** re-completion.
+- **I13 [T2]** A plain "Updated" badge (no Complete Again) **clears when opened** and requires **no** re-completion. Assert the badge is actually **absent** after opening (not just "no re-completion required") — a visual-only flag that never disappears must fail this.
 - **I14 [T1]** Topic search by content-item name; no match → "No content found." (❓ icon).
 
 ## Suite J — SCORM completion [T2]
 
 - **J1 [T2]** Opening a SCORM item does **not** auto-complete on open (unlike Link/PDF/Video).
-- **J2 [T2]** SCORM runtime reports completion/passed → item marked complete, topic progress updates.
+- **J2 [T2]** SCORM runtime reports completion/passed → item marked complete, topic progress updates. **Blocked on J3** — do not write/run this case against a specific signal until J3 is resolved; testing the wrong signal would give a false pass.
 - **J3 [T2]** (Dev open Q) Confirm which runtime signal is used — completion vs passed status — and test that exact signal.
 
 ## Suite K — Notifications (Email + SMS) [T2]
