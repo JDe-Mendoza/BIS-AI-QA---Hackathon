@@ -13,10 +13,11 @@
 // in Playwright-on-staging). NB the merged code additionally filters the grant picker to active
 // accounts (fldAccountActive IN (1,2)) - not modelled here (needs account state).
 //
-// OPEN QA QUESTION (flagged, not asserted): savePermission stores roleIds from tbltrainingrole
-// (fldTrainingRole_ID), but visibilityFilterSql joins PermissionRole.fldRoleID against
-// tblUserCompanyRoleRelation.fldSysCompanyRoleID - confirm those are the same ID space, else
-// By-Company-Role grants would never resolve (F2).
+// RESOLVED (Rejith, HAC-354, 2026-07-14): savePermission stores roleIds from tbltrainingrole
+// (fldTrainingRole_ID) and visibilityFilterSql joins PermissionRole.fldRoleID against
+// tblUserCompanyRoleRelation.fldSysCompanyRoleID - CONFIRMED same ID space (fldSysCompanyRoleID
+// stores fldTrainingRole_ID values; evidence prod bundle.cfc:1443). By-Company-Role grants
+// resolve correctly - F2 is sound.
 
 export const PERMISSION_TYPES = ['user', 'role'];
 

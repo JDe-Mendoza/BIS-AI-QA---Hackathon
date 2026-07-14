@@ -79,6 +79,13 @@ describe('Suite C - Content CRUD (T0)', () => {
 
   it.todo('C4 [T1] add Video by MP4 upload (<80MB) -> completionMode=watch; >80MB rejected');
   it.todo('C5 [T2] add SCORM (.zip) -> completionMode=score, plays in runtime');
-  it.todo('C9 [T1] edit content item persists in grid + list');
+  it('C9 [T1] edit a content item persists (saveActivity with activityId updates the same row)', () => {
+    const { activityId } = store.saveActivity({ topicId: TOPIC, title: 'Old', type: 'link', url: 'https://a' });
+    const edit = store.saveActivity({ activityId, topicId: TOPIC, title: 'New', type: 'video', url: 'https://youtu.be/x' });
+    expect(edit).toMatchObject({ error: false, activityId });
+    const items = store.getActivities(TOPIC);
+    expect(items).toHaveLength(1); // updates in place, no duplicate row
+    expect(items[0]).toMatchObject({ activityId, title: 'New', type: 'video', url: 'https://youtu.be/x', completionMode: 'open' });
+  });
   it.todo('C10 [T1] content grid <-> list toggle renders both');
 });
