@@ -37,10 +37,9 @@ MANUAL = human-only on staging; GUARD = stop-the-line (a failure blocks the wave
 ## S4 - Permissions (Suite F) - By User / By Company Role (By Location is GONE)
 - [ ] F0 topic with NO permission rows -> visible to ALL company learners (HAC-390).  [AUTO-F0]
 - [ ] F1 grant By User = ALICE -> ALICE sees the topic; BOB does NOT.  [AUTO-F1]
-- [ ] F2 grant By Company Role = R -> ALICE (in R) sees it; BOB (not in R) does NOT.
-       WATCH (GUARD): possible role-ID mismatch - savePermission stores tbltrainingrole IDs but
-       visibilityFilterSql matches tblUserCompanyRoleRelation.fldSysCompanyRoleID. If role grants
-       resolve to NOTHING for everyone, that is the F2 bug raised to @rejith.krishnan on HAC-354.
+- [ ] F2 grant By Company Role = R -> ALICE (in R) sees it; BOB (not in R) does NOT.  [AUTO-F2]
+       Role-ID resolution CONFIRMED sound (Rejith, HAC-354): fldSysCompanyRoleID stores
+       fldTrainingRole_ID values, so By-Company-Role grants resolve. Still spot-check live.
 - [ ] F3 remove ALICE's grant while another permission remains -> ALICE loses access; others unaffected.  [AUTO-F3]
 - [ ] F4 Add Permission modal offers ONLY By User + By Company Role (no By Location).  [AUTO-F4]
 
