@@ -1,11 +1,11 @@
 // Full committed scope - Support MDs "TDD - Test Cases (Full Scope).md" (Suites A-N).
 // Placeholder map so the whole scope is visible and traceable in one run. Fill in
 // tier order: T0 spine first (get green by the noon gate), then T1, then T2.
-// Do NOT flesh out T2 until the T0 spine is green. Suite I (completion) is worked
-// separately in tests/spine/completion.test.js. [GUARD] = stop-the-line case.
+// Do NOT flesh out T2 until the T0 spine is green. Suites B (topic CRUD) and I
+// (completion) are worked separately under tests/spine/. [GUARD] = stop-the-line case.
 //
-// Field constraints (load-bearing, from the V2 spec):
-//   Topic: title <=150 required, description <=500 required, image JPG/PNG <4MB,
+// Field constraints (load-bearing, from the V2 spec + frozen decisions):
+//   Topic: title <=150 required, description <=500 OPTIONAL (HAC-382), image JPG/PNG <4MB,
 //          status Active(default)/Draft/Deactivated
 //   Content: title <=50 required, type Link/PDF/Video(URL+MP4 <80MB)/SCORM,
 //            sorted alphabetically, completeAgain edit-only
@@ -19,15 +19,8 @@ describe('Suite A - Setup & Access [T0/T1]', () => {
   it.todo('A4 [T1] role gating: Course Admin cannot toggle in Setup but can open the module');
 });
 
-describe('Suite B - Topic CRUD & Dashboard [T0/T1]', () => {
-  it.todo('B1 [T0] create topic with valid title+description -> persists, card, status=Active');
-  it.todo('B2 [T0] empty title -> blocked, "Please enter a title."');
-  it.todo('B3 [T0] title > 150 -> blocked; char counter');
-  it.todo('B4 [T0] description > 500 -> blocked; char counter');
-  it.todo('B5 [T0] no image -> default topic image (not broken/empty)');
-  it.todo('B8 [T0] edit title/description -> persists on card + Topic Content page');
-  it.todo('B6/B7/B9-B14 [T1] crop, size/format reject, grid/list, pillbox, search, empty state, clickability');
-});
+// Suite B - Topic CRUD & Dashboard: worked in tests/spine/topic-crud.test.js
+// (B1/B1b/B2/B3/B4/B5/B8 green against the topic-contract oracle; B6/B7/B9-B14 todo).
 
 describe('Suite C - Content CRUD [T0/T1]', () => {
   it.todo('C1 [T0] add Link with valid URL -> persists, type chip + Last Updated');
