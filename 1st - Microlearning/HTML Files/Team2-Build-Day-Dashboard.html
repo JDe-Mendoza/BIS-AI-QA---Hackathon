@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team 2 — Build Day War Room</title>
+<style>
+  :root{
+    --red:#e11530; --red-dim:#7a1420; --red-soft:#2a1015;
+    --bg:#0c0d10; --panel:#15171c; --panel-2:#1c1f26; --line:#2a2e37;
+    --ink:#f4f5f7; --muted:#9aa0ab; --dim:#6a7079;
+    --green:#3ddc84; --amber:#ffb020; --blue:#4aa8ff;
+    --now:#e11530;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:radial-gradient(1200px 600px at 80% -10%, #17110f 0%, var(--bg) 55%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:26px 30px 22px; min-height:100vh; line-height:1.35;
+  }
+  .wrap{max-width:1680px; margin:0 auto;}
+
+  /* Header */
+  header{display:flex; align-items:center; justify-content:space-between; gap:20px; border-bottom:2px solid var(--red); padding-bottom:14px;}
+  .brand{display:flex; align-items:baseline; gap:14px;}
+  .brand .t2{font-size:34px; font-weight:900; letter-spacing:-.02em;}
+  .brand .t2 span{color:var(--red);}
+  .brand .sub{font-size:13px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); font-weight:700;}
+  .clockbox{text-align:right; display:flex; align-items:center; gap:22px;}
+  #clock{font-variant-numeric:tabular-nums; font-size:42px; font-weight:800; letter-spacing:.01em; line-height:1;}
+  #nowphase{font-size:12px; text-transform:uppercase; letter-spacing:.14em; color:var(--muted); margin-top:6px;}
+  #nowphase b{color:var(--red);}
+
+  /* Spine banner */
+  .spine{
+    margin:18px 0; background:linear-gradient(90deg,var(--red-soft),rgba(225,21,48,0) 70%);
+    border:1px solid var(--red-dim); border-left:5px solid var(--red);
+    border-radius:14px; padding:16px 22px;
+  }
+  .spine .lab{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--red); font-weight:800;}
+  .spine p{font-size:22px; font-weight:700; margin-top:4px;}
+  .spine .flow{color:var(--green); font-weight:800;}
+  .spine .tick{color:var(--amber); font-weight:800; white-space:nowrap;}
+
+  /* Layout grid */
+  .grid{display:grid; grid-template-columns:1.55fr 1fr; gap:18px; align-items:start;}
+  @media (max-width:1150px){ .grid{grid-template-columns:1fr;} }
+
+  .col{display:flex; flex-direction:column; gap:16px;}
+
+  h2.sec{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); font-weight:800; margin:2px 0 -4px 2px;}
+
+  /* Timeline */
+  .timeline{display:flex; flex-direction:column; gap:9px;}
+  .blk{
+    display:grid; grid-template-columns:112px 1fr; gap:16px; align-items:center;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:11px 15px;
+    transition:.2s;
+  }
+  .blk .time{font-variant-numeric:tabular-nums; font-weight:800; font-size:15px; color:var(--muted);}
+  .blk .body .name{font-weight:800; font-size:16px;}
+  .blk .body .act{font-size:13.5px; color:var(--muted); margin-top:2px;}
+  .blk .body .act b{color:var(--ink); font-weight:700;}
+  .blk.gate{border-color:var(--amber); background:linear-gradient(90deg,rgba(255,176,32,.08),var(--panel));}
+  .blk.gate .time{color:var(--amber);}
+  .blk.freeze{border-color:var(--red-dim);}
+  .blk.current{
+    border-color:var(--now); background:linear-gradient(90deg,rgba(225,21,48,.16),var(--panel-2));
+    box-shadow:0 0 0 1px var(--now), 0 8px 30px rgba(225,21,48,.18);
+    transform:scale(1.012);
+  }
+  .blk.current .time{color:#fff;}
+  .blk.current .name::after{content:"● NOW"; margin-left:10px; font-size:11px; color:var(--now); font-weight:800; letter-spacing:.1em; vertical-align:middle; animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1} 50%{opacity:.35}}
+  .blk.done{opacity:.5;}
+
+  /* Panels */
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:15px 17px;}
+  .panel h3{font-size:15px; font-weight:800; margin-bottom:10px; display:flex; align-items:center; gap:9px;}
+  .panel h3 .ic{width:9px; height:9px; border-radius:50%;}
+  .dot-red{background:var(--red);} .dot-amber{background:var(--amber);} .dot-green{background:var(--green);} .dot-blue{background:var(--blue);}
+
+  .roles{display:flex; flex-direction:column; gap:7px;}
+  .role{display:grid; grid-template-columns:96px 1fr; gap:10px; font-size:13.5px; padding:5px 0; border-bottom:1px dashed var(--line);}
+  .role:last-child{border-bottom:none;}
+  .role .who{font-weight:800; color:var(--blue);}
+  .role .lane{color:var(--muted);}
+
+  .ladder{counter-reset:step; display:flex; flex-direction:column; gap:0;}
+  .ladder .step{display:flex; gap:12px; align-items:baseline; padding:8px 0; border-bottom:1px dashed var(--line); font-size:14px;}
+  .ladder .step:last-child{border-bottom:none;}
+  .ladder .step::before{counter-increment:step; content:counter(step); background:var(--amber); color:#1a1204; font-weight:800; font-size:12px; min-width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;}
+  .never{margin-top:11px; background:var(--red-soft); border:1px solid var(--red-dim); border-radius:9px; padding:9px 12px; font-size:13.5px;}
+  .never b{color:var(--red);}
+
+  ul.rules{list-style:none; display:flex; flex-direction:column; gap:8px;}
+  ul.rules li{font-size:13.5px; color:var(--muted); padding-left:20px; position:relative;}
+  ul.rules li::before{content:"▸"; position:absolute; left:2px; color:var(--red); font-weight:800;}
+  ul.rules li b{color:var(--ink); font-weight:700;}
+
+  footer{margin-top:18px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--dim); border-top:1px solid var(--line); padding-top:12px;}
+  footer b{color:var(--muted);}
+  .rubric{color:var(--green); font-weight:700;}
+  kbd{background:var(--panel-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:11px; color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="t2">TEAM <span>2</span> · WAR ROOM</div>
+      <div class="sub">Microlearning · TKT-8716 · Build Day</div>
+    </div>
+    <div class="clockbox">
+      <div>
+        <div id="clock">--:--</div>
+        <div id="nowphase">phase: <b>—</b></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="spine">
+    <div class="lab">The spine · never cut · green by the noon merge</div>
+    <p>Admin <span class="flow">builds</span> a topic → adds content → learner <span class="flow">opens</span> it → <span class="tick">completion ticks 2/3 → 3/3 → Completed</span></p>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEFT: timeline -->
+    <div class="col">
+      <h2 class="sec">Today · code freezes 3:45 (hard 4:00)</h2>
+      <div class="timeline" id="timeline">
+        <div class="blk" data-start="8:00" data-end="8:15">
+          <div class="time">8:00–8:15</div>
+          <div class="body"><div class="name">Standup</div>
+            <div class="act">Confirm scope, sandbox, board, agents. Say the cut rule out loud. Each person has <b>&gt;1 ticket</b>.</div></div>
+        </div>
+        <div class="blk" data-start="8:15" data-end="12:00">
+          <div class="time">8:15–12:00</div>
+          <div class="body"><div class="name">Build Block 1 — scaffold then fan out</div>
+            <div class="act">Captain scaffolds <b>solo first</b> → merge → worktrees branch. Web 3 <b>publishes mock completion API</b>. TDD drives. <b>Target: T0 spine green.</b></div></div>
+        </div>
+        <div class="blk gate" data-start="12:00" data-end="12:30">
+          <div class="time">12:00–12:30</div>
+          <div class="body"><div class="name">Mandatory merge + Decision Gate</div>
+            <div class="act">All worktrees → master, run tests. <b>Spine green?</b> → climb to T1. <b>Not green?</b> → cut T2 top-down NOW.</div></div>
+        </div>
+        <div class="blk" data-start="12:30" data-end="15:30">
+          <div class="time">12:30–3:30</div>
+          <div class="body"><div class="name">Build Block 2 — complete then stretch</div>
+            <div class="act">Build <b>T1</b> (edit, bulk, permissions, crop, mobile). T2 sinkholes only after T1 is solid. <b>~2:30 informal merge.</b></div></div>
+        </div>
+        <div class="blk freeze" data-start="15:30" data-end="16:00">
+          <div class="time">3:30–4:00</div>
+          <div class="body"><div class="name">Code Freeze — real target 3:45</div>
+            <div class="act">Final merge + full test run + sandbox deploy. <b>Nothing after 4:00 counts.</b> Drivers diff-read their agents.</div></div>
+        </div>
+        <div class="blk" data-start="16:00" data-end="16:30">
+          <div class="time">4:00–4:30</div>
+          <div class="body"><div class="name">Presentation prep — Mika leads</div>
+            <div class="act">Scope → shipped % → live spine demo → novel technique → agent-decision story. Assign Q&A owners.</div></div>
+        </div>
+        <div class="blk" data-start="17:00" data-end="17:15">
+          <div class="time">5:00–5:15</div>
+          <div class="body"><div class="name">Team 2 presents (~15 min)</div>
+            <div class="act">Demo the spine <b>live in the sandbox</b>. Lead with scope discipline: committed X, shipped Y%, here's our noon call.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: reference panels -->
+    <div class="col">
+
+      <div class="panel">
+        <h3><span class="ic dot-amber"></span>Cut ladder — if behind at noon</h3>
+        <div class="ladder">
+          <div class="step">Drop <b>T2</b> top-to-bottom (multi-lang → SCORM → email/SMS → …)</div>
+          <div class="step">Grid view → <b>list view only</b></div>
+          <div class="step">Drop <b>By-Company-Role</b> (keep By-User)</div>
+          <div class="step">Drop the <b>3rd content type</b> (keep Link + one more)</div>
+        </div>
+        <div class="never"><b>NEVER CUT:</b> create topic → add content → learner opens → completion tracked. Every cut = one logged line (what / when / why / shipped-instead).</div>
+      </div>
+
+      <div class="panel">
+        <h3><span class="ic dot-blue"></span>Lanes &amp; owners</h3>
+        <div class="roles">
+          <div class="role"><span class="who">Captain</span><span class="lane">Scaffold first → runs every merge · <code>foundation</code></span></div>
+          <div class="role"><span class="who">Web 2</span><span class="lane">Admin build-content · <code>admin</code></span></div>
+          <div class="role"><span class="who">Web 3</span><span class="lane">Learner + completion (spine) · <code>learner</code></span></div>
+          <div class="role"><span class="who">Mobile</span><span class="lane">SafeTapp RN · <code>mobile</code></span></div>
+          <div class="role"><span class="who">Pat (PM)</span><span class="lane">Backlog + Lifecycle/Access · <code>lifecycle</code></span></div>
+          <div class="role"><span class="who">Mika</span><span class="lane">Figma refs · Decisions Log · deck</span></div>
+          <div class="role"><span class="who">John+Chai</span><span class="lane">TDD — spine tests first · <code>tests</code></span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3><span class="ic dot-red"></span>Standing rules — all day</h3>
+        <ul class="rules">
+          <li><b>1 active agent per worktree.</b> Cap 2–3 per person. No 100-agent spawns.</li>
+          <li>Captain runs merges. Commit prefix <b>[lane][ticket]</b>.</li>
+          <li>Every architectural decision → <b>1 line in Decisions Log + Linear ticket to Mika.</b></li>
+          <li>Guard tests are stop-the-line: <b>double-count · per-learner · persistence · preview-no-complete.</b></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <span><b>Rubric bet:</b> <span class="rubric">realistic scope delivered ~90% beats inflated delivered 50%.</span> Floor first, then climb.</span>
+    <span>Press <kbd>F11</kbd> for fullscreen · clock auto-highlights the current block</span>
+  </footer>
+
+</div>
+
+<script>
+  function toMin(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function tick(){
+    const now = new Date();
+    const mins = now.getHours()*60 + now.getMinutes();
+    // 12-hour display
+    let h = now.getHours(); const ap = h>=12?'PM':'AM'; let h12 = h%12; if(h12===0) h12=12;
+    document.getElementById('clock').textContent = h12+':'+pad(now.getMinutes())+' '+ap;
+
+    const blks = document.querySelectorAll('#timeline .blk');
+    let currentName = '—', matched = false;
+    blks.forEach(b=>{
+      b.classList.remove('current','done');
+      const s = toMin(b.dataset.start), e = toMin(b.dataset.end);
+      if(mins >= s && mins < e){ b.classList.add('current'); currentName = b.querySelector('.name').textContent; matched=true; }
+      else if(mins >= e){ b.classList.add('done'); }
+    });
+    // between blocks (e.g. 4:30–5:00) — highlight nothing, show nearest upcoming
+    if(!matched){
+      for(const b of blks){ if(mins < toMin(b.dataset.start)){ currentName = 'next: '+b.querySelector('.name').textContent; break; } }
+    }
+    document.getElementById('nowphase').innerHTML = 'phase: <b>'+currentName+'</b>';
+  }
+  tick(); setInterval(tick, 15000);
+</script>
+</body>
+</html>

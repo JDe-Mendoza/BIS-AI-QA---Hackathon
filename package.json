@@ -1,0 +1,16 @@
+{
+  "name": "bis-qa-microlearning",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Team 2 QA agent — Vitest acceptance/contract tests for the Microlearning module (PM 8716). Scope: 1st - Microlearning/Support MDs + frozen plans/8716 CONTRACTS.md.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:spine": "vitest run tests/spine",
+    "test:guard": "vitest run -t \"⭐\""
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}

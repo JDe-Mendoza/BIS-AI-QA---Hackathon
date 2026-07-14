@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ticket 8716 Microlearning — Test Strategy (TestRail + Playwright)</title>
+<style>
+  :root{--done:#16a34a;--active:#2563eb;--pending:#64748b;--cut:#dc2626;--stub:#f59e0b;
+        --p0:#dc2626;--p1:#f59e0b;--p2:#38bdf8;
+        --bg:#0f172a;--card:#1e293b;--ink:#e2e8f0;--mut:#94a3b8;--line:#334155}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:15px/1.5 system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);padding:32px;max-width:1100px;margin:0 auto}
+  h1{font-size:26px;margin-bottom:4px}
+  h3{font-size:15px;margin:14px 0 6px;color:#cbd5e1}
+  .sub{color:var(--mut);margin-bottom:24px}
+  .rules{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:28px}
+  .rules strong{color:#7dd3fc}
+  .phase{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:20px;position:relative;border-left:6px solid var(--active)}
+  .phase.qa{border-left-color:var(--done)}
+  .phase.tool{border-left-color:var(--stub)}
+  .phase.risk{border-left-color:var(--cut)}
+  .phase h2{font-size:18px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+  .tag{color:var(--mut);font-size:13px;font-weight:400}
+  .demo{margin:10px 0 14px;padding:10px 14px;background:#0b1220;border-radius:6px;border:1px solid var(--line)}
+  .demo b{color:#7dd3fc}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 8px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600}
+  code{background:#0b1220;padding:1px 5px;border-radius:4px;font-size:12.5px}
+  ul{margin:4px 0 8px 20px}li{margin:3px 0}
+  .b{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;color:#0b1220;white-space:nowrap}
+  .P0{background:var(--p0);color:#fff}.P1{background:var(--p1)}.P2{background:var(--p2)}
+  .auto{background:var(--done);color:#fff}.man{background:var(--pending);color:#fff}.hyb{background:var(--stub)}
+  .legend{font-size:12px;color:var(--mut);margin-bottom:20px}
+  .legend span{display:inline-block;margin-right:14px}
+  .note{font-size:12.5px;color:var(--mut);margin-top:8px}
+  .cutline{border:0;border-top:3px dashed var(--line);margin:30px 0 8px}
+</style>
+</head>
+<body>
+<h1>Ticket 8716 · Microlearning — Test Strategy</h1>
+<p class="sub"><b>TestRail</b> for test-case management &amp; traceability · <b>Playwright</b> for web E2E automation · scope derived from
+<code>PLAN.html</code> (build-day storyboard, Waves 1–4 + multi-language thread) · owners <code>@john.demendoza</code> / <code>@chaitanya.thakur</code></p>
+
+<div class="rules">
+  <strong>Scope in one line:</strong> Validate the committed Microlearning slice — admin enables the module, builds a Topic, adds Link/PDF/Video-URL
+  Activities, grants access By Location, and a Learner opens each activity so the topic rolls up
+  <code>2/3 → 3/3 → Completed</code> — across 5 languages, on <code>team2.staging.bissafety.app</code>.<br>
+  <strong>Never-cut core loop (= P0):</strong> create topic → add activity → learner opens → completion tracked. Everything else is prioritised below it.<br>
+  <strong>Platform boundary:</strong> Playwright covers <b>web</b> (admin + learner). The <b>Safetapp React&nbsp;Native</b> thread is out of Playwright's reach — tracked in TestRail, executed <b>manually</b> (Appium/Detox noted as future work, not this effort).
+</div>
+
+<p class="legend">
+  Priority:
+  <span class="b P0">P0</span> core loop / gating
+  <span class="b P1">P1</span> full feature
+  <span class="b P2">P2</span> enhancement / edge
+  &nbsp;|&nbsp; Coverage:
+  <span class="b auto">Auto</span> Playwright
+  <span class="b hyb">Hybrid</span> auto + manual check
+  <span class="b man">Manual</span> human only
+</p>
+
+<!-- ===================== 1. TOOLING ROLES ===================== -->
+<div class="phase tool">
+<h2>1 · How the two tools split the work</h2>
+<table>
+<tr><th style="width:130px">Tool</th><th>Owns</th><th>Does <em>not</em> own</th></tr>
+<tr>
+  <td><b>TestRail</b></td>
+  <td>Single source of truth for test <b>cases</b>, priorities, and coverage; organises cases into Suite → Sections; groups execution into <b>Milestones / Test Plans / Runs</b>; records manual results; receives automated results via API; reports pass rate &amp; traceability to tickets (W1-1 … C19).</td>
+  <td>Does not run tests. Not a place to store step-by-step automation code.</td>
+</tr>
+<tr>
+  <td><b>Playwright</b></td>
+  <td>Executes browser E2E flows for the <b>web</b> admin + learner apps; seeds/cleans data via <code>bisapi</code>; runs smoke on every PR and full regression before the demo; produces trace/video/screenshot artifacts on failure.</td>
+  <td>Does not author or prioritise cases (that lives in TestRail). Does not test Safetapp RN mobile.</td>
+</tr>
+</table>
+<p class="note"><b>The bridge:</b> every automated Playwright test is annotated with its TestRail case ID (e.g. <code>C1042</code>); a CI reporter opens a Run in TestRail and posts pass/fail back — so one coverage report shows manual + automated together. See §5.</p>
+</div>
+
+<!-- ===================== 2. TESTRAIL STRUCTURE ===================== -->
+<div class="phase">
+<h2>2 · TestRail structure</h2>
+<h3>Hierarchy</h3>
+<ul>
+  <li><b>Project:</b> <code>Microlearning (8716)</code> — single master suite (<code>Microlearning · Master</code>), sections below.</li>
+  <li><b>Sections</b> map 1:1 to the storyboard so coverage gaps are visible against the build plan:</li>
+</ul>
+<table>
+<tr><th style="width:38px">#</th><th>Section</th><th>Source in PLAN.html</th><th>Priority focus</th></tr>
+<tr><td>S1</td><td>Setup &amp; Module Enablement</td><td>W1-1 (Setup toggle, portal tab, admin tile)</td><td><span class="b P0">P0</span> gates everything</td></tr>
+<tr><td>S2</td><td>Admin — Topic Management</td><td>P0-4, W1-2, W1-3, W1-4 (Build-Your-Own, CRUD, dashboard, details)</td><td><span class="b P0">P0</span>/<span class="b P1">P1</span></td></tr>
+<tr><td>S3</td><td>Admin — Activity Management</td><td>W2-1, W2-2, W2-3 (Link/PDF/Video, validation, S3 upload)</td><td><span class="b P0">P0</span>/<span class="b P1">P1</span></td></tr>
+<tr><td>S4</td><td>Admin — Permissions / Access</td><td>W2-4 (By Location, All Locations)</td><td><span class="b P1">P1</span></td></tr>
+<tr><td>S5</td><td>Learner — Discovery &amp; Homepage</td><td>W3-3 (All/In Progress/Complete filter, search)</td><td><span class="b P1">P1</span></td></tr>
+<tr><td>S6</td><td>Learner — Activity &amp; Completion</td><td>W3-1, W3-2 (open Link/PDF/Video, recordCompletion, rollup)</td><td><span class="b P0">P0</span></td></tr>
+<tr><td>S7</td><td>Multi-language &amp; Localization</td><td>ML-1, ML-2, C12–C14, fr-CA sweep, <code>useSafeLanguage()</code></td><td><span class="b P1">P1</span> (QA watches hardest)</td></tr>
+<tr><td>S8</td><td>Enhancements — Media / State / Order / Audit</td><td>W4 C15–C19 (image crop, deactivate, Draft, reorder, notes)</td><td><span class="b P2">P2</span></td></tr>
+<tr><td>S9</td><td>Mobile — Safetapp (manual)</td><td>W1-M, W2-M, W3-M</td><td><span class="b P1">P1</span> manual</td></tr>
+<tr><td>S10</td><td>Cross-cutting — Roles, Smoke, Regression</td><td>role isolation, freeze-demo script, negative/edge</td><td><span class="b P0">P0</span>/<span class="b P2">P2</span></td></tr>
+</table>
+
+<h3>Case template fields (add these custom fields)</h3>
+<table>
+<tr><th>Field</th><th>Values / purpose</th></tr>
+<tr><td>Priority <span class="tag">(built-in)</span></td><td><span class="b P0">P0</span> Critical · <span class="b P1">P1</span> High · <span class="b P2">P2</span> Medium — P0 = the never-cut loop + module gating.</td></tr>
+<tr><td>Type <span class="tag">(built-in)</span></td><td>Functional · Negative · E2E · Regression · Accessibility · Localization</td></tr>
+<tr><td>Automation Status</td><td><b>Not automated</b> · <b>Candidate</b> · <b>Automated</b> — drives what Playwright picks up next.</td></tr>
+<tr><td>Playwright Ref</td><td>Spec path + test title, e.g. <code>learner/completion.spec.ts › records 3/3</code>. Filled when automated.</td></tr>
+<tr><td>Platform</td><td>Web-Admin · Web-Learner · Mobile</td></tr>
+<tr><td>Refs <span class="tag">(built-in)</span></td><td>Storyboard ticket ID (<code>W2-1</code>, <code>C18</code>…) → PM case link for traceability.</td></tr>
+</table>
+
+<h3>Milestones, Plans &amp; Runs</h3>
+<ul>
+  <li><b>Milestones</b> mirror the build cadence: <code>Wave 1 · Admin spine</code>, <code>Wave 2 · Activities + access</code>, <code>Wave 3 · Completion loop</code>, <code>Freeze / Demo</code>.</li>
+  <li><b>Test Plan per milestone</b> holds parallel <b>Runs</b> configured by variable: <em>Browser = Chromium</em> and <em>Language = en-CA / fr-CA</em>. The fr-CA run is mandatory (localization is committed scope).</li>
+  <li><b>Automated Run</b> (CI-created) and <b>Manual Run</b> (checklist execution) live under the same Plan so the pass-rate rolls up together.</li>
+</ul>
+</div>
+
+<!-- ===================== 3. COVERAGE MAP ===================== -->
+<div class="phase qa">
+<h2>3 · Coverage map — representative cases per section</h2>
+<div class="demo">Not the full case list — the anchor cases that must exist, with their priority and how they'll be verified. The core loop (S1→S3→S6) is automated first as the demo guardrail.</div>
+<table>
+<tr><th>Sec</th><th>Representative test cases</th><th>Pri</th><th>Cover</th></tr>
+<tr><td>S1</td><td>Module toggle OFF hides tab/tile for admin &amp; learner; toggle ON reveals both; state persists after reload</td><td><span class="b P0">P0</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S2</td><td>Create topic via Build-Your-Own; title required + char-count enforced; topic lands on Details as <em>Active</em>; edit + description collapse; dashboard grid/list + Active/Draft/Deactivated pillbox + search</td><td><span class="b P0">P0</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S2</td><td>Negative: empty title, over-limit title, duplicate handling, cancel discards</td><td><span class="b P1">P1</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S3</td><td>Add each type — Link, PDF (S3 upload, <code>ht2/</code> key), Video URL; 50-char title + count; success modal; type icons + last-updated; edit activity</td><td><span class="b P0">P0</span></td><td><span class="b hyb">Hybrid</span></td></tr>
+<tr><td>S3</td><td>Negative: invalid URL, missing type, oversized/invalid PDF</td><td><span class="b P1">P1</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S4</td><td>Grant By-Location → learner in that location sees topic; learner outside does not; All-Locations grants everyone; multi-select</td><td><span class="b P1">P1</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S5</td><td>Homepage filters All / In&nbsp;Progress / Complete; learner search; empty state ("No topics available")</td><td><span class="b P1">P1</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S6</td><td><b>Core loop:</b> open Link→new tab, PDF→new tab, Video→embed; each open records completion; progress <code>2/3→3/3→Completed ✓</code> updates live</td><td><span class="b P0">P0</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S6</td><td><b>Idempotency:</b> re-open a completed activity → completion count unchanged; progress does not exceed 3/3</td><td><span class="b P0">P0</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S7</td><td>Add fr-CA to a topic → language chips + per-language fields; auto-translate fills name/description; French-profile learner sees French content; <b>fallback</b> to default language when a variant is missing (server-side resolved, learner payload unchanged)</td><td><span class="b P1">P1</span></td><td><span class="b hyb">Hybrid</span></td></tr>
+<tr><td>S7</td><td>No hardcoded strings — every visible label resolves via <code>lblHt2Microlearning*</code>; scan for un-translated English in fr-CA run</td><td><span class="b P1">P1</span></td><td><span class="b auto">Auto</span></td></tr>
+<tr><td>S8</td><td>Image upload + crop/preview (topic &amp; activity), default-image fallback; deactivate/reactivate activity (completions intact, Deactivated pillbox); Draft topic pauses learner access; drag-reorder drives learner order; notes/audit trail</td><td><span class="b P2">P2</span></td><td><span class="b hyb">Hybrid</span></td></tr>
+<tr><td>S9</td><td>Safetapp: topic list renders, activity opens, completion reflects — on staging bisapi (mock fallback)</td><td><span class="b P1">P1</span></td><td><span class="b man">Manual</span></td></tr>
+<tr><td>S10</td><td>Role isolation (learner cannot reach admin CRUD); full-loop demo-script regression; cross-browser smoke</td><td><span class="b P0">P0</span></td><td><span class="b auto">Auto</span></td></tr>
+</table>
+</div>
+
+<!-- ===================== 4. PLAYWRIGHT ===================== -->
+<div class="phase">
+<h2>4 · Playwright automation design</h2>
+
+<h3>Project layout</h3>
+<ul>
+  <li><code>@playwright/test</code> + TypeScript. <code>tests/</code> (specs by section) · <code>pages/</code> (Page Objects) · <code>fixtures/</code> (auth + seeded data) · <code>data/</code> (topic/activity builders) · <code>utils/</code> (API client, TestRail reporter).</li>
+  <li><b>Auth once per role:</b> global setup logs in an <em>admin</em> and a <em>learner</em> test account, saves <code>storageState</code>; specs reuse it — no repeated UI login. Credentials come from CI secrets / env, never hardcoded.</li>
+  <li><b>Seed via API, assert via UI:</b> topics/activities/permissions are created through <code>bisapi</code> wrappers (<code>saveTopic</code>, <code>getMyTopics</code>, <code>getTopic</code>, <code>recordCompletion</code>) in fixtures for speed &amp; determinism; the UI is driven only for the behaviour under test. Each spec cleans up what it seeds.</li>
+</ul>
+
+<h3>Selector strategy</h3>
+<ul>
+  <li>Prefer <code>getByRole</code> + <code>getByTestId</code> over CSS/text. Request devs add <code>data-testid</code> on: topic card, pillbox, activity type icon, Start button, progress counter, language chip.</li>
+  <li><b>Known gap:</b> the drag-reorder handle is <code>div role="button"</code>, not a native <code>&lt;button&gt;</code> (per W4-4). It needs an explicit <code>data-testid</code> to be reliably targetable — and that non-native control is itself an <b>accessibility finding</b> to log.</li>
+</ul>
+
+<h3>Tricky behaviours &amp; how to automate them</h3>
+<table>
+<tr><th>Behaviour</th><th>Playwright approach</th></tr>
+<tr><td>Link / PDF open in new tab</td><td><code>context.waitForEvent('page')</code> → assert the new tab's URL / target; PDF <em>rendering</em> stays a manual check.</td></tr>
+<tr><td>Video URL embed</td><td>Assert the embed <code>iframe</code> is present with the expected <code>src</code>; playback quality is manual.</td></tr>
+<tr><td>Live progress rollup</td><td>Open activity → assert counter transitions <code>2/3 → 3/3</code> and status flips to <em>Completed</em> without reload.</td></tr>
+<tr><td>Completion idempotency</td><td>Fire <code>recordCompletion</code> twice (UI re-open + direct API) → assert progress capped and count stable.</td></tr>
+<tr><td>By-Location scoping</td><td>Seed two learners in different locations; assert visibility differs; All-Locations flips both to visible.</td></tr>
+<tr><td>fr-CA localization</td><td>Separate Playwright <b>project</b> with a French learner profile; run core specs; assert French labels resolve + default-language fallback; fail on leaked English strings.</td></tr>
+</table>
+
+<h3>Tagging &amp; run selection</h3>
+<ul>
+  <li>Grep tags: <code>@smoke</code> <code>@p0</code> <code>@regression</code> <code>@localization</code> <code>@wave1</code>…<code>@wave4</code>.</li>
+  <li><code>@smoke</code> = the never-cut loop only — the fast gate that must stay green.</li>
+</ul>
+
+<h3>CI integration</h3>
+<ul>
+  <li><b>Every PR into</b> <code>team2-hackathon</code>: run <code>@smoke</code> against staging — blocks merge if red.</li>
+  <li><b>Pre-demo / nightly:</b> full regression incl. fr-CA project.</li>
+  <li>On failure: attach trace, video, screenshot. Retries = 1 (surface flakes, don't hide them).</li>
+</ul>
+</div>
+
+<!-- ===================== 5. TRACEABILITY ===================== -->
+<div class="phase qa">
+<h2>5 · Traceability — Playwright ↔ TestRail</h2>
+<ul>
+  <li>Each automated spec title carries its case ID, e.g. <code>test('C1042 · learner completes topic 3/3', …)</code>, or a Playwright <code>annotation</code> of type <code>testrail</code>.</li>
+  <li>CI creates a <b>Run</b> inside the milestone's Test Plan and a reporter posts each result (pass/fail + trace URL) to the matching case via the TestRail API.</li>
+  <li>When a case is automated, set its <b>Automation Status → Automated</b> and fill <b>Playwright Ref</b>. Un-automated cases stay <b>Candidate</b> or <b>Manual</b> — the report shows the real automated-vs-manual split, no blind spots.</li>
+  <li>Both directions covered: TestRail case → <code>Refs</code> → storyboard ticket (<code>W2-1</code>) → PM case; and Playwright test → case ID → section → priority.</li>
+</ul>
+<p class="note">MCP note: a <code>testrail</code> connector is available in this workspace (<code>list_suites</code>, <code>list_sections</code>, <code>list_runs</code>, <code>fetch_run_cases</code>…) — usable later to script section/case scaffolding or pull live run status once the project exists.</p>
+</div>
+
+<!-- ===================== 6. MANUAL vs AUTOMATED ===================== -->
+<div class="phase">
+<h2>6 · Manual vs automated split</h2>
+<table>
+<tr><th>Stays manual (or hybrid)</th><th>Why</th></tr>
+<tr><td>Image crop / preview fidelity (C15)</td><td>Automate <em>presence</em> of crop modal + saved image; crop quality is a human visual judgement.</td></tr>
+<tr><td>Drag-to-reorder feel (C18)</td><td>Automate that persisted order drives learner order; the drag interaction UX is manual.</td></tr>
+<tr><td>PDF &amp; video content rendering</td><td>Automate the open/embed; actual document/playback correctness is manual.</td></tr>
+<tr><td>Safetapp RN mobile (S9)</td><td>Playwright is web-only — full manual pass on the mobile build; Appium/Detox is future, not this effort.</td></tr>
+<tr><td>fr-CA visual walkthrough</td><td>String scan is automated; layout/truncation/tone in French is a human sweep (committed scope).</td></tr>
+<tr><td>Exploratory + demo-script dry run</td><td>Human exploration around the freeze; scripted regression backs it.</td></tr>
+</table>
+</div>
+
+<!-- ===================== 7. RISK, ENV, PHASING ===================== -->
+<div class="phase risk">
+<h2>7 · Risk focus, environments &amp; rollout</h2>
+
+<h3>Highest-risk areas (deepen coverage here)</h3>
+<ul>
+  <li><b>Completion loop &amp; idempotency</b> — it's the committed demo; double-recording or a stuck rollup is the worst failure. Most automation weight here.</li>
+  <li><b>Multi-language / localization</b> — storyboard says "QA watches this thread hardest"; fallback + no-hardcoded-strings + fr-CA are its own risk-based suite.</li>
+  <li><b>By-Location permissions</b> — a scoping bug leaks a topic to the wrong learners; test positive + negative visibility explicitly.</li>
+  <li><b>Module toggle gating</b> — OFF must fully hide the feature for both roles.</li>
+</ul>
+
+<h3>Environment &amp; data</h3>
+<ul>
+  <li><b>Target:</b> <code>team2.staging.bissafety.app</code> (HTTPS). Web admin + web learner.</li>
+  <li><b>Roles:</b> System admin (enable module, topic/activity CRUD, permissions) · Learner (with a Location + Language profile).</li>
+  <li><b>Data matrix:</b> ≥2 Locations (for By-Location + All-Locations) · 5 supported languages with fr-CA as the mandatory walkthrough · one topic per pillbox state (Active / Draft / Deactivated).</li>
+  <li>Test accounts only; secrets injected via CI — no real credentials handled in tests.</li>
+</ul>
+
+<h3>Entry / exit criteria (per wave)</h3>
+<ul>
+  <li><b>Entry:</b> CONTRACTS frozen, endpoints reachable (stub ok), <code>testCommand</code> skeleton green.</li>
+  <li><b>Exit:</b> all P0 cases pass on staging · <code>@smoke</code> automation green · no open Sev-1 · fr-CA run executed.</li>
+</ul>
+
+<h3>Automation rollout (mirrors the build order)</h3>
+<ul>
+  <li><b>Phase A</b> — framework + auth/data fixtures + <code>@smoke</code> skeleton (aligns with P0-5 <code>testCommand</code>).</li>
+  <li><b>Phase B</b> — Admin topic + activity CRUD specs (Waves 1–2).</li>
+  <li><b>Phase C</b> — Learner completion loop + idempotency (Wave 3) — the demo guardrail.</li>
+  <li><b>Phase D</b> — Localization + By-Location + Wave-4 regression, layered on once the core is green.</li>
+</ul>
+</div>
+
+<hr class="cutline">
+<p class="note">Derived solely from <code>PLAN.html</code>. Ticket IDs (W1-1 … C19), the never-cut loop, staging URL, S3 <code>ht2/</code> path, the <code>div role="button"</code> drag handle, and the fr-CA localization mandate all trace back to that storyboard.</p>
+
+</body>
+</html>

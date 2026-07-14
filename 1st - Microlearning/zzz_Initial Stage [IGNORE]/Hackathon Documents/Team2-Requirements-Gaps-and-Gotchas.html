@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team 2 — Requirements Gaps &amp; Gotchas</title>
+<style>
+  :root{--ink:#1a1d29;--muted:#5b6376;--line:#dce1ea;--bg:#fff;--accent:#3b5bdb;--soft:#f3f5fb;
+    --product:#7048e8;--dev:#e8590c;--data:#0b7285;--cut:#a61e4d;--warn:#fff4e6;--warnln:#ffd8a8;}
+  *{box-sizing:border-box}
+  body{margin:0;background:#eceff5;color:var(--ink);font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .page{max-width:940px;margin:16px auto;background:var(--bg);padding:26px 30px;border-radius:8px;box-shadow:0 2px 14px rgba(20,25,45,.12)}
+  .tag{color:var(--accent);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:10.5px}
+  h1{font-size:20px;margin:2px 0 4px}
+  .lead{color:var(--muted);margin:0 0 12px;font-size:12.5px}
+  .lead b{color:var(--ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}
+  .k{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);background:var(--soft);border:1px solid var(--line);border-radius:20px;padding:2px 9px}
+  .k i{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .search{width:100%;padding:9px 12px;font-size:13px;border:1px solid var(--line);border-radius:7px;margin-bottom:6px}
+  .count{font-size:11px;color:var(--muted);margin-bottom:10px}
+  h2{font-size:14px;margin:20px 0 8px;color:#20264a;border-bottom:2px solid var(--accent);padding-bottom:4px}
+  .item{padding:10px 0;border-bottom:1px solid var(--line)}
+  .item .hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .gid{font-weight:800;color:var(--accent);font-size:12px;white-space:nowrap}
+  .pill{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:1px 6px;border-radius:9px;color:#fff}
+  .p-product{background:var(--product)} .p-dev{background:var(--dev)} .p-data{background:var(--data)} .p-cut{background:var(--cut)}
+  .item .q{font-weight:700;font-size:12.5px}
+  .item .body{margin:4px 0 0;color:#2a2f3e;font-size:12px}
+  .item .rec{display:block;margin-top:3px;color:#0b7285}
+  .item .rec b{color:#095c6b}
+  .item.dev .rec{color:var(--dev)} .item.dev .rec b{color:#b34700}
+  code{background:#eef1f8;border-radius:4px;padding:0 4px;font-size:11.5px}
+  .banner{border-radius:7px;padding:9px 12px;font-size:12px;margin:10px 0}
+  .banner.red{background:#fff0f3;border:1px solid #ffc9d4}
+  .banner.red b{color:var(--cut)}
+  ul.cut{margin:6px 0 0;padding-left:16px}
+  ul.cut li{margin:3px 0;font-size:12px}
+  table.map{width:100%;border-collapse:collapse;margin-top:6px}
+  table.map td{border-bottom:1px solid var(--line);padding:6px 8px;font-size:12px;vertical-align:top}
+  table.map .st{white-space:nowrap;font-weight:700}
+  .done{color:#0b7285} .todo{color:var(--dev)}
+  .nohit{display:none;color:var(--muted);font-style:italic;padding:12px 0}
+  .sig{color:var(--muted);font-size:10.5px;margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+  @media print{body{background:#fff}.page{box-shadow:none;margin:0;max-width:none}.search,.count{display:none}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="tag">Team 2 · Microlearning · Day-1 deliverable #1</div>
+  <h1>Requirements Gap List &amp; Gotchas</h1>
+  <p class="lead">PM Ticket 8716 read against our committed v1 scope. Every item is a <b>question with our recommended answer</b>, so the case deep-dive is a confirm/adjust conversation, not an open-ended one. The teal line is the answer we bring to product.</p>
+  <div class="legend">
+    <span class="k"><i class="p-product"></i>PRODUCT · needs a product/design call</span>
+    <span class="k"><i class="p-dev"></i>DEV · technical risk we mitigate</span>
+    <span class="k"><i class="p-data"></i>DATA/INFRA · secure before 8:15</span>
+    <span class="k"><i class="p-cut"></i>CUT-CLEAN · deferred feature to hide cleanly</span>
+  </div>
+  <input class="search" id="q" placeholder="Filter gaps… (e.g. upload, video, permission, sandbox)" autocomplete="off">
+  <div class="count" id="count"></div>
+
+  <div id="list">
+
+  <h2>A · Product decisions to confirm (with our recommended answer)</h2>
+
+  <div class="item"><div class="hd"><span class="gid">G1</span><span class="pill p-product">product</span><span class="q">Role/permission matrix — how many roles do we enforce?</span></div>
+    <div class="body">The spec names many roles (Senior Client Admin, Client Security Admin, Client Admin, Course Admin, plus BIS network roles). Building the full matrix is days of work.
+    <span class="rec"><b>Recommended:</b> enforce a single admin role gate (Client Admin can do everything) and a single learner account; provision the schema for the full matrix but do not build per-role gating.</span></div></div>
+
+  <div class="item"><div class="hd"><span class="gid">G2</span><span class="pill p-product">product</span><span class="q">Title limit — "50 alphanumeric characters" (line 108).</span></div>
+    <div class="body">"Alphanumeric" literally excludes spaces and punctuation, which would reject "Defensive Driving 101."
+    <span class="rec"><b>Recommended:</b> treat as 50 characters allowing spaces + basic punctuation, with a live counter. Confirm intent.</span></div></div>
+
+  <div class="item"><div class="hd"><span class="gid">G3</span><span class="pill p-product">product</span><span class="q">Video completion — full-watch detection vs open-to-complete.</span></div>
+    <div class="body">Spec (line 1035) says "possible to detect if a user watched the whole video." True detection needs the player APIs and event wiring, a rabbit hole.
+    <span class="rec"><b>Recommended:</b> v1 marks a Link/PDF/Video complete <b>when the learner opens/launches it</b> (spec already defines Link + PDF this way). Video full-watch is a fast-follow.</span></div></div>
+
+  <div class="item"><div class="hd"><span class="gid">G4</span><span class="pill p-product">product</span><span class="q">Activity types in the dropdown for v1.</span></div>
+    <div class="body">Spec offers Video, Link, PDF, and Activity (SCORM ZIP). SCORM and uploaded MP4 are out of scope.
+    <span class="rec"><b>Recommended:</b> v1 dropdown = <b>Link, PDF, Video URL (YouTube/Vimeo)</b>. Hide "Activity" (SCORM) and MP4-upload.</span></div></div>
+
+  <div class="item"><div class="hd"><span class="gid">G5</span><span class="pill p-product">product</span><span class="q">Topic Settings page — how much do we build?</span></div>
+    <div class="body">The full Settings page is huge (General, CEUs, Languages, Status, Public Access). We only need the path that makes the learner side work.
+    <span class="rec"><b>Recommended:</b> build <b>only Settings → Permissions (By Location)</b>. Skip CEUs, Languages, Public Access, Status dropdown for v1.</span></div></div>
+
+  <div class="item"><div class="hd"><span class="gid">G6</span><span class="pill p-product">product</span><span class="q">Single language only for v1.</span></div>
+    <div class="body">Multi-language (per-language uploads, auto-translate, "use default for all languages") is deferred, but the Language control is woven through Create Topic and every activity.
+    <span class="rec"><b>Recommended:</b> v1 uses <b>the portal default language only</b>; hide the "add another language" UI entirely.</span></div></div>
+
+  <div class="item"><div class="hd"><span class="gid">G7</span><span class="pill p-product">product</span><span class="q">"Complete Again" on activity edit.</span></div>
+    <div class="body">Drives re-completion and progress recalculation (lines 272-298), genuinely complex.
+    <span class="rec"><b>Recommended:</b> v1 edit saves fields only; <b>no Complete Again</b> (unchecked behavior = users unaware, which the spec allows).</span></div></div>
+
+  <div class="item"><div class="hd"><span class="gid">G8</span><span class="pill p-product">product</span><span class="q">Permissions table columns without events.</span></div>
+    <div class="body">The Managing-Permissions table is mostly event columns (Event Status/Start/End). We deferred events.
+    <span class="rec"><b>Recommended:</b> show Name / Type / summary, with Event Status = <b>N/A</b> for all rows.</span></div></div>
+
+  <h2>B · Technical gotchas &amp; risks (we mitigate)</h2>
+
+  <div class="item dev"><div class="hd"><span class="gid">G9</span><span class="pill p-dev">dev</span><span class="q">File storage for PDF (and images) is the single biggest technical risk.</span></div>
+    <div class="body">PDF upload (&lt;15MB) and image upload (&lt;4MB) both need a real file store. If the dev environment does not expose the existing BIS upload service, this blocks the PDF activity type.
+    <span class="rec"><b>Mitigation / fallback:</b> confirm the existing upload pattern early (codegraph + anchor files). Fallback if hard: <b>ship Link + Video URL only</b>, demo PDF via a link to a hosted PDF. Decide the trigger by ~10:30.</span></div></div>
+
+  <div class="item dev"><div class="hd"><span class="gid">G10</span><span class="pill p-dev">dev</span><span class="q">Completion-detection for links/PDFs that open in a new tab.</span></div>
+    <div class="body">The activity opens in a new browser tab; completion must still be recorded, and cannot come from the new tab.
+    <span class="rec"><b>Mitigation:</b> frontend calls a <code>recordCompletion(activityId)</code> endpoint <b>at the click-to-open</b> (learner already authenticated in the portal). Define this in the CP-2 contract explicitly.</span></div></div>
+
+  <div class="item dev"><div class="hd"><span class="gid">G11</span><span class="pill p-dev">dev</span><span class="q">CFML verification loop is slower than React.</span></div>
+    <div class="body">Frontend builds/tests locally in a worktree; CFML changes need the dev environment to verify, so the backend lane's lap is longer.
+    <span class="rec"><b>Mitigation:</b> backend leans on TDD (tests run without the full app) + a smoke script; plan merge cadence around the CFML lap length.</span></div></div>
+
+  <div class="item dev"><div class="hd"><span class="gid">G12</span><span class="pill p-dev">dev</span><span class="q">Custom Date Format dependency (lines 309, 341).</span></div>
+    <div class="body">"Last Updated" is meant to follow the portal's custom date-format setting.
+    <span class="rec"><b>Mitigation:</b> v1 uses one sensible default date format; do not build the custom-date-format setting. Note as a known simplification.</span></div></div>
+
+  <div class="item dev"><div class="hd"><span class="gid">G13</span><span class="pill p-dev">dev</span><span class="q">Topic is Active on creation but invisible until a permission exists.</span></div>
+    <div class="body">Spec: "default Status is Active… no permissions have been granted yet." Not a bug, but it will confuse the demo if forgotten.
+    <span class="rec"><b>Mitigation:</b> bake the demo path in: create topic (Active) → add activities → add By-Location permission → learner sees it. Put this in the demo script.</span></div></div>
+
+  <h2>C · Dependencies to secure BEFORE build day (owner: PM + captain)</h2>
+
+  <div class="item"><div class="hd"><span class="gid">G14</span><span class="pill p-data">data/infra</span><span class="q">Seed data for the full loop.</span></div>
+    <div class="body">Need a demo portal with: locations + a sublocation, several users mapped to them, one <b>admin</b> account, and one <b>learner</b> whose location matches the permission. Without this, the permission → learner-sees-topic loop cannot be demoed.
+    <span class="rec"><b>Action:</b> confirm seed data exists in the sandbox, or QA builds fixtures.</span></div></div>
+
+  <div class="item"><div class="hd"><span class="gid">G15</span><span class="pill p-data">data/design</span><span class="q">The default topic image asset (lines 133, 394).</span></div>
+    <div class="body">Spec says a default image shows when none is uploaded, but the asset is not provided.
+    <span class="rec"><b>Action:</b> get it from Mika/design, or ship a simple placeholder.</span></div></div>
+
+  <div class="banner red"><span class="gid">G16</span> &nbsp;<span class="pill p-data">data/infra</span> &nbsp;<b>The demo/sandbox environment and deploy path — highest-priority open question to close today.</b><br>
+    Confirm the sandbox exists and how code reaches it for the 3:30 freeze → deploy → demo. This gates whether we demo live, local, or recorded, and shapes the whole 3:30-4:00 sequence.</div>
+
+  <div class="item"><div class="hd"><span class="gid">G17</span><span class="pill p-data">data/infra</span><span class="q">Team branch + <code>.swb.json</code>.</span></div>
+    <div class="body">Confirm Team 2's branch in bistrainerdev and that <code>.swb.json</code> (teamKey, testCommand, defaultBranch) is committed on it before 8:15.</div></div>
+
+  <h2>D · Clean-cut boundaries (deferred features inside v1 screens)</h2>
+  <div class="body" style="color:var(--muted);font-size:12px">In the spec's dashboard/settings UI but out of scope. Hide or grey cleanly so the UI does not dangle broken buttons or imply network behavior:</div>
+  <ul class="cut">
+    <li><b>Company drop-down</b> on the dashboard (line 50), a multi-portal switcher. Remove for v1.</li>
+    <li><b>Training Provider + "Launched" status</b> on cards (lines 79-86), a network concept. Show portal name only; no launched state.</li>
+    <li><b>Public Access / Launch to Companies / Decommissioning</b>, the entire network-sharing surface. Not rendered.</li>
+    <li><b>Draft &amp; Deactivated topic states</b>, v1 topics are effectively Active-only (Deactivate/Reactivate is a stretch). Show Active only, or render the pillbox with empty Draft/Deactivated.</li>
+    <li><b>Event/notification affordances</b> (Schedule Event toggle, Event Notification editor, email log), deferred with events. Not rendered.</li>
+    <li><b>CEUs toggle, Auto-translate, Push to Subportals.</b> Not rendered.</li>
+  </ul>
+
+  <h2>E · The one mechanic to design carefully: completion tracking</h2>
+  <div class="body">This is the spine of the demo, so worth a dedicated contract. The <code>microlearning_completion</code> record should capture <code>userId</code>, <code>activityId</code>, <code>topicId</code>, <code>firstCompletedAt</code>, <code>lastCompletedAt</code>, <code>status</code> (Not Started / In Progress / Completed). Provision the two timestamps now even though v1 only sets completion on open, so a later "Complete Again" fast-follow needs no migration. Topic progress = count(Completed) / count(active activities); topic status rolls up New / In Progress / Completed. Define all of this in CP-2 so backend and the learner UI build against the same shape.</div>
+
+  </div>
+  <p class="nohit" id="nohit">No gaps match that filter.</p>
+
+  <h2>Where this leaves the six Day-1 deliverables</h2>
+  <table class="map">
+    <tr><td class="st">1 · Requirements gap list</td><td class="done">This document. Walk A + B through the deep-dive; close C (especially G16) with organizers/infra.</td></tr>
+    <tr><td class="st">2 · Work breakdown + dependency map</td><td class="done">Done: Scope-and-Plan.md + Workflow.html.</td></tr>
+    <tr><td class="st">3 · &gt;1 parallel ticket per person</td><td class="done">Drafted in swb-seed-backlog.sh; starters listed in plan §7 (can expand to guarantee 2+ each).</td></tr>
+    <tr><td class="st todo">4 · AGENTS.md + PLANNING.md</td><td class="todo">Not yet. Next: fill the AGENTS template with roster, god-file lanes, testCommand, Gate/WIP calls; write PLANNING.md from the plan.</td></tr>
+    <tr><td class="st">5 · Committed scope statement</td><td class="done">Done: §2 of the scope doc.</td></tr>
+    <tr><td class="st todo">6 · Testing strategy / TDD cases</td><td class="todo">Not yet. Next: TDD case list for topic CRUD, activity CRUD, completion, By-Location permission + the testCommand.</td></tr>
+  </table>
+
+  <p class="sig">Suggested next step: draft #4 (AGENTS.md + PLANNING.md) and #6 (testing strategy) so all six are in hand before the 4:00 cross-team critique. — Patrick (PM)</p>
+</div>
+<script>
+  const q=document.getElementById('q'), items=[...document.querySelectorAll('#list .item')],
+        heads=[...document.querySelectorAll('#list h2')], count=document.getElementById('count'),
+        nohit=document.getElementById('nohit');
+  function upd(){
+    const s=q.value.trim().toLowerCase(); let shown=0;
+    items.forEach(t=>{const hit=!s||t.textContent.toLowerCase().includes(s);t.style.display=hit?'':'none';if(hit)shown++;});
+    count.textContent=shown+' of '+items.length+' lettered gaps';
+    nohit.style.display=shown?'none':'block';
+  }
+  q.addEventListener('input',upd); upd();
+</script>
+</body>
+</html>

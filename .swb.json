@@ -1,0 +1,5 @@
+{
+  "teamKey": "HAC",
+  "testCommand": "npx vitest run",
+  "defaultBranch": "main"
+}

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team 2 — Microlearning · Scope We're Committing To</title>
+<style>
+  :root{
+    --red:#c8102e; --red-soft:#fdecee; --ink:#1a1a1f; --muted:#6b6f76;
+    --line:#e6e7ea; --bg:#f6f7f9; --card:#ffffff;
+    --green:#1a7f4b; --green-soft:#e9f6ee;
+    --amber:#b06a00; --amber-soft:#fdf3e2;
+    --slate:#334155;
+    --shadow:0 1px 2px rgba(20,20,30,.04),0 6px 20px rgba(20,20,30,.06);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1180px; margin:0 auto; padding:40px 36px 56px;}
+
+  /* Header */
+  .masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; border-bottom:3px solid var(--red); padding-bottom:20px;}
+  .kicker{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--red); font-weight:700; margin:0 0 6px;}
+  h1{font-size:30px; line-height:1.15; margin:0; letter-spacing:-.01em;}
+  h1 .tkt{color:var(--muted); font-weight:600;}
+  .meta{text-align:right; font-size:12.5px; color:var(--muted);}
+  .meta b{color:var(--ink);}
+
+  /* Spine */
+  .spine{
+    margin:22px 0 30px; background:linear-gradient(90deg,var(--red-soft),#fff);
+    border:1px solid #f3d3d8; border-left:4px solid var(--red);
+    border-radius:12px; padding:16px 20px; box-shadow:var(--shadow);
+  }
+  .spine .label{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--red); font-weight:700; margin:0 0 4px;}
+  .spine p{margin:0; font-size:16.5px; font-weight:600; color:var(--ink);}
+  .spine em{color:var(--red); font-style:normal;}
+
+  /* Two-column commit vs cut */
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  @media (max-width:820px){ .cols{grid-template-columns:1fr;} .meta{text-align:left} }
+  .col{background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;}
+  .col-head{padding:14px 18px; display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px;}
+  .col-head .tag{font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; margin-left:auto;}
+  .commit .col-head{background:var(--green-soft); color:var(--green); border-bottom:1px solid #d5ecdd;}
+  .commit .tag{background:#fff; color:var(--green); border:1px solid #cfe9d9;}
+  .cut .col-head{background:#f2f3f5; color:var(--slate); border-bottom:1px solid var(--line);}
+  .cut .tag{background:#fff; color:var(--slate); border:1px solid var(--line);}
+  .col ul{list-style:none; margin:0; padding:8px 18px 16px;}
+  .col li{padding:9px 0 9px 26px; position:relative; font-size:13.7px; border-bottom:1px dashed #eef0f2;}
+  .col li:last-child{border-bottom:none;}
+  .col li b{font-weight:650;}
+  .commit li::before{content:"✓"; position:absolute; left:2px; top:9px; color:var(--green); font-weight:800; font-size:13px;}
+  .cut li::before{content:"✕"; position:absolute; left:3px; top:9px; color:#b23; opacity:.65; font-weight:800; font-size:12px;}
+  .grp{font-size:10.5px; letter-spacing:.10em; text-transform:uppercase; color:var(--muted); font-weight:700; padding:12px 0 2px 0; border-bottom:none !important;}
+  .grp::before{content:"" !important;}
+  .whocut{color:var(--muted); font-size:12px;}
+
+  /* language callout */
+  .lang{margin-top:24px; background:var(--card); border:1px solid var(--line); border-left:4px solid var(--amber); border-radius:14px; box-shadow:var(--shadow); padding:18px 20px;}
+  .lang h3{margin:0 0 4px; font-size:15px; display:flex; align-items:center; gap:8px;}
+  .lang .pill{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; background:var(--amber-soft); color:var(--amber); padding:3px 9px; border-radius:999px;}
+  .lang p{margin:8px 0 0; font-size:13.5px; color:var(--slate);}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+  .chip{font-size:12px; padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:#fafbfc; color:var(--slate);}
+  .chip.default{background:var(--red-soft); color:var(--red); border-color:#f3d3d8; font-weight:650;}
+
+  /* stretch ladder */
+  .ladder{margin-top:24px;}
+  .ladder h3{font-size:13px; text-transform:uppercase; letter-spacing:.10em; color:var(--muted); margin:0 0 12px;}
+  .rungs{display:flex; gap:10px; flex-wrap:wrap;}
+  .rung{flex:1 1 150px; background:var(--card); border:1px solid var(--line); border-top:3px solid var(--amber); border-radius:10px; padding:10px 12px; box-shadow:var(--shadow); font-size:12.5px;}
+  .rung .n{font-size:10.5px; color:var(--amber); font-weight:700;}
+  .rung b{display:block; margin-top:2px; font-size:12.8px;}
+
+  .footnote{margin-top:26px; font-size:11.5px; color:var(--muted); border-top:1px solid var(--line); padding-top:14px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .footnote b{color:var(--ink);}
+
+  @media print{
+    body{background:#fff}
+    .page{padding:16px 8px}
+    .col,.lang,.rung,.spine{box-shadow:none}
+    .rungs{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <div>
+      <p class="kicker">Hackathon · Team 2 · Deliverable 1</p>
+      <h1>Scope We're Committing To <span class="tkt">— &amp; What We Cut from the Case</span></h1>
+    </div>
+    <div class="meta">
+      <div><b>Microlearning</b> · PM Ticket 8716</div>
+      <div>Build day: Tue Jul 14 · code freeze 4:00pm</div>
+      <div>Source: Version 2 spec (62 pp) → committed slice</div>
+    </div>
+  </div>
+
+  <div class="spine">
+    <p class="label">The one thing a judge watches end-to-end</p>
+    <p>An admin <em>builds</em> a Microlearning topic with real content, a learner <em>opens</em> that content, and <em>completion is tracked</em> — the topic ticks 2/3 → 3/3 → Completed.</p>
+  </div>
+
+  <div class="cols">
+
+    <!-- COMMITTING TO -->
+    <div class="col commit">
+      <div class="col-head">Committing to — finished to ~90%<span class="tag">The vertical slice</span></div>
+      <ul>
+        <li class="grp">Admin — build content</li>
+        <li>Turn Microlearning <b>on in Setup</b>; the module tile + end-user tab appear</li>
+        <li><b>Dashboard</b>: topic cards (grid + list), status pillbox, search, Add Topic, empty state</li>
+        <li><b>Create a topic</b> — title (char count + validation), description, default image</li>
+        <li><b>Topic Content page</b> — header, collapsible description, Add Content, grid/list, empty state</li>
+        <li>Add content of type <b>Link, PDF, Video</b> (URL embed <b>+ uploaded MP4</b>) and <b>SCORM "Activity"</b> — with type icon + last-updated</li>
+        <li><b>Edit</b> a content item (incl. edit-only "Complete Again")</li>
+        <li><b>Bulk-select</b> content — checkboxes + action bar (deactivate / reactivate / purge)</li>
+        <li>Topic Settings — general metadata (title / image / description)</li>
+        <li><b>Multi-language</b> — portal-language default + additional languages, per-language Title / Description / Source, with <b>auto-translate</b> (create + Manage Languages)</li>
+
+        <li class="grp">Manage &amp; lifecycle</li>
+        <li><b>Image upload + crop</b> modal (topic + content) — default image as fallback</li>
+        <li><b>Draft</b> topic status — pauses learner access</li>
+        <li><b>Deactivate / Reactivate</b> + Deactivated view (single &amp; bulk)</li>
+        <li><b>Purge</b> — permanent delete with purge-code confirm</li>
+        <li><b>Drag-to-reorder</b> content (6-dot handle)</li>
+        <li><b>Notes / audit trail</b> on topic actions</li>
+        <li><b>Decommission</b> topic state (beyond Deactivate)</li>
+
+        <li class="grp">Access — assign topics</li>
+        <li>Grant access via <b>permissions</b> — <b>By User</b> and <b>By Company Role</b> (Add Permission UI on the topic)</li>
+
+        <li class="grp">Learner — consume content</li>
+        <li><b>Homepage</b>: granted topics with New / In&nbsp;Progress / Completed, All/In&nbsp;Progress/Complete filter, search</li>
+        <li><b>Open a topic</b> and see its content</li>
+        <li>Open a Link / PDF / Video / <b>SCORM</b> item → <b>completion recorded</b> (incl. SCORM completion detection), progress updates</li>
+        <li><b>Email + SMS notifications</b> to learners (topic assigned / updated / reminders)</li>
+        <li><b>Home-page Training section</b> — surfaces assigned / in-progress / completed microlearning on the portal home</li>
+
+        <li class="grp">Mobile — SafeTapp</li>
+        <li><b>Mobile app</b> (React Native): browse topics from the Training tab + <b>open all content types in-app</b> (Link / PDF / Video / SCORM), completion synced</li>
+
+        <li class="grp">Quality</li>
+        <li>Automated tests ship: topic CRUD, content CRUD, completion tracking — the <b>swb done</b> gate</li>
+      </ul>
+    </div>
+
+    <!-- CUT -->
+    <div class="col cut">
+      <div class="col-head">Cut from the case — provision only, don't build<span class="tag">Pre-empts the critique</span></div>
+      <ul>
+        <li class="grp">The big cuts</li>
+        <li><b>Events scheduling engine</b> — frequency/cadence scheduling + custom email editor <span class="whocut">(the notifications themselves are in scope; the scheduler is not)</span></li>
+        <li><b>Anything AI</b> — Generate-Using-AI topic/content (removed entirely, not even a greyed "coming soon")</li>
+
+        <li class="grp">Feature depth</li>
+        <li><b>By Location</b> permission type — By User + By Company Role cover the demo</li>
+        <li><b>CEUs</b> (Continuing Education Units)</li>
+        <li><b>Public / network topics</b>, Launch to Companies</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="footnote">
+    <span>Never cut: <b>create topic → add content → learner opens → completion tracked.</b> Inside-slice fallbacks if a lane slips: list view → learner search → drop By-Company-Role (keep By-User) → 3rd content type.</span>
+    <span>Rubric bet: <b>realistic &amp; ~90% done</b> beats inflated &amp; half-done.</span>
+  </div>
+
+</div>
+</body>
+</html>

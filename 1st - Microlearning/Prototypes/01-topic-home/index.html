@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microlearning — Topic Home (Prototype)</title>
+<!--
+  BIS Microlearning (TKT-8716) · End User · 01 Topic Home — front-end prototype
+  Spec: Microlearning MD Files/End User/01 - Topic Home.md
+  Figma: node 284:21362
+  Repo target (bistrainerdev): v1/views/microlearning/ (learner module landing).
+  Follows Mahi's dev-handoff pattern (runnable index.html). Mock data; single screen only.
+-->
+<style>
+  :root{
+    --bis-red:#A6192E; --blue:#0078B3; --blue-link:#0f6cbd;
+    --text:#191919; --muted:#666; --border:#e2e2e2; --bg:#fff;
+    --green-bg:#e6f4ea; --green-fg:#1e7e34;
+    --blue-bg:#e7f3fb; --blue-fg:#0069a8;
+    --gold-bg:#fbf1d6; --gold-fg:#9a6a00;
+    --nav-bg:#fafafa;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Open Sans","Segoe UI",Arial,sans-serif;color:var(--text);background:#fff;font-size:14px}
+  a{color:var(--blue-link);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* portal chrome */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--bis-red);font-size:20px}
+  .brand span{color:#333;font-weight:600;font-size:11px;line-height:1.1;border-left:1px solid #ccc;padding-left:8px}
+  .topbar-right{display:flex;align-items:center;gap:14px;color:var(--muted)}
+  .search-user{border:1px solid var(--border);border-radius:4px;padding:6px 10px;color:#999;font-size:13px;min-width:160px}
+  .nav{display:flex;gap:22px;padding:10px 20px;border-bottom:1px solid var(--border);font-size:14px}
+  .nav a{color:#333}
+  .nav a.active{color:#111;font-weight:700}
+
+  /* module header */
+  .module-head{background:var(--bis-red);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+  .module-head h1{margin:0;font-size:20px;font-weight:700}
+  .btn-back{background:transparent;border:1px solid rgba(255,255,255,.8);color:#fff;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:13px}
+  .btn-back:hover{background:rgba(255,255,255,.12)}
+
+  /* toolbar */
+  .toolbar{display:flex;align-items:center;gap:14px;padding:14px 20px;flex-wrap:wrap}
+  .pills{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .pills button{border:0;background:#fff;padding:7px 16px;cursor:pointer;font-size:13px;color:#333;border-right:1px solid var(--border)}
+  .pills button:last-child{border-right:0}
+  .pills button.active{background:#e8f1fb;color:var(--blue);font-weight:600}
+  .searchbox{position:relative;flex:0 0 260px}
+  .searchbox input{width:100%;border:1px solid var(--border);border-radius:4px;padding:8px 32px 8px 10px;font-size:13px}
+  .searchbox .ico{position:absolute;right:9px;top:8px;color:#999}
+  .view-toggle{margin-left:auto;display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .view-toggle button{border:0;background:#fff;padding:7px 10px;cursor:pointer;color:#666}
+  .view-toggle button.active{background:#e8f1fb;color:var(--blue)}
+
+  .wrap{padding:0 20px 30px}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.grid{grid-template-columns:1fr}}
+  .card{border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;background:#fff;transition:box-shadow .15s,transform .15s;display:flex;flex-direction:column}
+  .card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12);transform:translateY(-2px)}
+  .card .thumb{height:140px;position:relative;background-size:cover;display:flex;align-items:flex-end}
+  .badge-updated{position:absolute;top:10px;right:10px;background:var(--green-bg);color:var(--green-fg);font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;display:flex;align-items:center;gap:5px}
+  .badge-updated::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green-fg)}
+  .card .body{padding:12px 14px 4px}
+  .card .name{color:var(--blue-link);font-weight:700;font-size:15px}
+  .card .acts{color:var(--muted);font-size:13px;margin:14px 0 12px}
+  .status{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;font-size:13px;font-weight:600;margin-top:auto}
+  .status .lbl{display:flex;align-items:center;gap:7px}
+  .status .chev{opacity:.6}
+  .st-completed{background:var(--green-bg);color:var(--green-fg)}
+  .st-inprogress{background:var(--blue-bg);color:var(--blue-fg)}
+  .st-new{background:var(--gold-bg);color:var(--gold-fg)}
+
+  /* list */
+  table.list{width:100%;border-collapse:collapse}
+  table.list th{text-align:left;font-size:12px;color:#333;font-weight:700;padding:8px 10px;border-bottom:1px solid var(--border)}
+  table.list td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle}
+  table.list tr{cursor:pointer}
+  table.list tr:hover td{background:#f7fbff}
+  .list-topic{display:flex;align-items:center;gap:12px}
+  .list-thumb{width:46px;height:34px;border-radius:4px;background-size:cover;flex:0 0 auto}
+  .pill{display:inline-block;padding:3px 12px;border-radius:12px;font-size:12px;font-weight:600}
+  .list-updated{background:var(--green-bg);color:var(--green-fg);font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px}
+  .col-status{width:160px}.col-acts{width:110px;color:var(--muted)}.col-chev{width:30px;color:#bbb;text-align:right}
+
+  .loadmore{display:flex;justify-content:center;margin:22px 0}
+  .loadmore button{border:1px solid var(--border);background:#fff;border-radius:4px;padding:8px 22px;cursor:pointer;color:#333}
+  .loadmore button:hover{background:#f5f5f5}
+
+  /* empty states */
+  .empty{text-align:center;color:var(--muted);padding:70px 20px}
+  .empty .ico{font-size:44px;color:#c7c7c7}
+  .empty h2{color:var(--blue);font-weight:700;margin:14px 0 6px;font-size:19px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">◆ BIS <span>IN-HOUSE<br>CANADA</span></div>
+    <div class="topbar-right">
+      <span class="search-user">Search User ⌕</span>
+      <span>◔</span><span>?</span><span>Log Out ›</span>
+    </div>
+  </div>
+  <nav class="nav">
+    <a href="#">Home</a><a href="#">Profile</a><a href="#">Store</a><a href="#">Users</a>
+    <a href="#">Reporting</a><a href="#">Calendar</a><a href="#">Assets</a><a href="#">Folders</a>
+    <a href="#" class="active">Microlearning</a><a href="#">QR</a><a href="#">Admin</a>
+  </nav>
+
+  <div class="module-head">
+    <h1>Microlearning</h1>
+    <button class="btn-back">Back</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="pills" id="filters">
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="inprogress">In Progress</button>
+      <button data-filter="complete">Complete</button>
+    </div>
+    <div class="searchbox">
+      <input id="search" type="text" placeholder="Search">
+      <span class="ico">⌕</span>
+    </div>
+    <div class="view-toggle" id="views">
+      <button data-view="grid" class="active" title="Grid view">▦</button>
+      <button data-view="list" title="List view">☰</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="stage"></div>
+    <div class="loadmore" id="loadmore"><button>Load More</button></div>
+  </div>
+
+<script>
+  // ---- mock data (alphabetical; matches Figma frame) ----
+  const HUES = [205, 25, 145, 45, 265, 15, 195, 95];
+  const TOPICS = [
+    {name:"Daily Pre-Trip", done:1, total:5, updated:false},
+    {name:"Defensive Driving", done:5, total:5, updated:false},
+    {name:"Fall Protection", done:1, total:5, updated:true},
+    {name:"Ground Disturbance", done:1, total:5, updated:false},
+    {name:"Propane Handling & Exchange", done:0, total:5, updated:false},
+    {name:"Rigging", done:10, total:10, updated:false},
+    {name:"Skid Steer Loader", done:0, total:5, updated:false},
+    {name:"Transportation of Dangerous Goods", done:1, total:5, updated:false},
+  ].sort((a,b)=>a.name.localeCompare(b.name))
+   .map((t,i)=>({...t, thumb:`linear-gradient(135deg,hsl(${HUES[i%HUES.length]},55%,55%),hsl(${(HUES[i%HUES.length]+40)%360},60%,42%))`}));
+
+  function statusOf(t){
+    if(t.done>=t.total) return {key:"completed", label:"Completed", cls:"st-completed", pill:"var(--green-bg)"};
+    if(t.done===0) return {key:"new", label:"New", cls:"st-new"};
+    return {key:"inprogress", label:"In Progress", cls:"st-inprogress"};
+  }
+  const ICON = {completed:"✔", inprogress:"◷", new:"☆"};
+
+  let state = {filter:"all", view:"grid", q:""};
+
+  function visible(){
+    return TOPICS.filter(t=>{
+      const s = statusOf(t).key;
+      // In Progress filter = New + In Progress together (per resolved decision)
+      if(state.filter==="inprogress" && !(s==="inprogress"||s==="new")) return false;
+      if(state.filter==="complete" && s!=="completed") return false;
+      if(state.q && !t.name.toLowerCase().includes(state.q.toLowerCase())) return false;
+      return true;
+    });
+  }
+
+  function render(){
+    const stage = document.getElementById('stage');
+    const items = visible();
+    document.getElementById('loadmore').style.display = items.length ? "flex" : "none";
+
+    if(TOPICS.length===0){
+      stage.innerHTML = `<div class="empty"><div class="ico">🎓</div><h2>Welcome to Microlearning!</h2><div>You have no microlearning topics currently available.</div></div>`;
+      return;
+    }
+    if(items.length===0){
+      stage.innerHTML = `<div class="empty"><div class="ico">❓</div><div style="margin-top:10px">No topics found.</div></div>`;
+      return;
+    }
+
+    if(state.view==="grid"){
+      stage.innerHTML = `<div class="grid">${items.map(t=>{
+        const s = statusOf(t);
+        return `<div class="card">
+          <div class="thumb" style="background:${t.thumb}">${t.updated?'<span class="badge-updated">Updated</span>':''}</div>
+          <div class="body">
+            <div class="name">${t.name}</div>
+            <div class="acts">Activities: ${t.done}/${t.total}</div>
+          </div>
+          <div class="status ${s.cls}"><span class="lbl">${ICON[s.key]} ${s.label}</span><span class="chev">›</span></div>
+        </div>`;
+      }).join('')}</div>`;
+    } else {
+      stage.innerHTML = `<table class="list">
+        <thead><tr><th>Topic</th><th class="col-status">Status</th><th class="col-acts">Activities</th><th class="col-chev"></th></tr></thead>
+        <tbody>${items.map(t=>{
+          const s = statusOf(t);
+          const pillStyle = s.key==="completed"?"background:var(--green-bg);color:var(--green-fg)":s.key==="new"?"background:var(--gold-bg);color:var(--gold-fg)":"background:var(--blue-bg);color:var(--blue-fg)";
+          return `<tr>
+            <td><div class="list-topic"><span class="list-thumb" style="background:${t.thumb}"></span>
+              <span class="name" style="font-weight:700">${t.name}</span>${t.updated?'<span class="list-updated">● Updated</span>':''}</div></td>
+            <td class="col-status"><span class="pill" style="${pillStyle}">${s.label}</span></td>
+            <td class="col-acts">${t.done}/${t.total}</td>
+            <td class="col-chev">›</td>
+          </tr>`;
+        }).join('')}</tbody></table>`;
+    }
+  }
+
+  document.getElementById('filters').addEventListener('click',e=>{
+    if(e.target.dataset.filter){
+      state.filter=e.target.dataset.filter;
+      [...e.currentTarget.children].forEach(b=>b.classList.toggle('active',b===e.target));
+      render();
+    }
+  });
+  document.getElementById('views').addEventListener('click',e=>{
+    if(e.target.dataset.view){
+      state.view=e.target.dataset.view;
+      [...e.currentTarget.children].forEach(b=>b.classList.toggle('active',b===e.target));
+      render();
+    }
+  });
+  document.getElementById('search').addEventListener('input',e=>{ state.q=e.target.value; render(); });
+
+  render();
+</script>
+</body>
+</html>
